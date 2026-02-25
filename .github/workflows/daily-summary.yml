@@ -1,0 +1,98 @@
+name: KAVACH Daily Progress Summary
+
+on:
+  schedule:
+    # Runs at 10 PM IST (4:30 PM UTC) every day
+    - cron: '30 16 * * *'
+  workflow_dispatch:  # Can also trigger manually
+
+jobs:
+  daily-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history for stats
+
+      - name: Generate daily stats
+        id: stats
+        run: |
+          # Commits today per branch
+          TODAY=$(date -u +%Y-%m-%d)
+          
+          RAJ=$(git log origin/raj/agents \
+            --since="$TODAY 00:00" \
+            --oneline 2>/dev/null | wc -l | tr -d ' ')
+          
+          ML=$(git log origin/ml/pipeline \
+            --since="$TODAY 00:00" \
+            --oneline 2>/dev/null | wc -l | tr -d ' ')
+          
+          FE=$(git log origin/frontend/dashboard \
+            --since="$TODAY 00:00" \
+            --oneline 2>/dev/null | wc -l | tr -d ' ')
+          
+          FS=$(git log origin/fullstack/infra \
+            --since="$TODAY 00:00" \
+            --oneline 2>/dev/null | wc -l | tr -d ' ')
+          
+          TOTAL=$((RAJ + ML + FE + FS))
+          
+          echo "raj=$RAJ" >> $GITHUB_OUTPUT
+          echo "ml=$ML" >> $GITHUB_OUTPUT
+          echo "fe=$FE" >> $GITHUB_OUTPUT
+          echo "fs=$FS" >> $GITHUB_OUTPUT
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+
+      - name: Send daily summary to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          RAJ=${{ steps.stats.outputs.raj }}
+          ML=${{ steps.stats.outputs.ml }}
+          FE=${{ steps.stats.outputs.fe }}
+          FS=${{ steps.stats.outputs.fs }}
+          TOTAL=${{ steps.stats.outputs.total }}
+          DATE=$(date -u +"%d %B %Y")
+          
+          # Status emoji based on commits
+          status() {
+            if [ "$1" -ge 3 ]; then echo "🟢"
+            elif [ "$1" -ge 1 ]; then echo "🟡"
+            else echo "🔴"
+            fi
+          }
+          
+          RAJ_S=$(status $RAJ)
+          ML_S=$(status $ML)
+          FE_S=$(status $FE)
+          FS_S=$(status $FS)
+          
+          # Overall team status
+          if [ "$TOTAL" -ge 8 ]; then TEAM_MSG="Amazing productivity today! 🚀"
+          elif [ "$TOTAL" -ge 4 ]; then TEAM_MSG="Good progress, keep going! 💪"
+          elif [ "$TOTAL" -ge 1 ]; then TEAM_MSG="Slow day — push harder tomorrow! ⚡"
+          else TEAM_MSG="No commits today — koi kaam hua kya? 👀"
+          fi
+          
+          TEXT="📊 <b>KAVACH Daily Summary — $DATE</b>
+
+<b>Commits Today:</b>
+$RAJ_S Raj (Agents): $RAJ commits
+$ML_S ML Member: $ML commits  
+$FE_S Frontend: $FE commits
+$FS_S Fullstack: $FS commits
+
+📈 Total: <b>$TOTAL commits</b>
+
+$TEAM_MSG
+
+⏰ Days until finale: $(( ($(date -d '2026-03-28' +%s) - $(date +%s)) / 86400 )) days left
+🎯 Hackathon: 28 March 2026, Bharat Mandapam"
+
+          curl -s -X POST \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d chat_id="${CHAT_ID}" \
+            -d text="$TEXT" \
+            -d parse_mode="HTML"
