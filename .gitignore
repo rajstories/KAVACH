@@ -1,0 +1,34 @@
+# Node / JS
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build artifacts
+dist/
+build/
+coverage/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Prisma
+backend/prisma/dev.db
+backend/prisma/dev.db-journal

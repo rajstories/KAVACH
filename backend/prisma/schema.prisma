@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Domain {
+  IDENTITY
+  NETWORK
+  INFRASTRUCTURE
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IncidentStatus {
+  OPEN
+  CONTAINED
+  RESOLVED
+  ARCHIVED
+}
+
+enum AlertChannel {
+  TELEGRAM
+  EMAIL
+  SLACK
+}
+
+enum AlertDeliveryStatus {
+  SENT
+  FAILED
+}
+
+enum CopilotLanguage {
+  HINDI
+  ENGLISH
+}
+
+model Incident {
+  id                     String         @id @default(cuid())
+  executionId            String
+  domain                 Domain
+  severity               Severity
+  status                 IncidentStatus @default(OPEN)
+  classification         String
+  confidence             Float
+  offenderType           String
+  offenderValue          String
+  affectedService        String
+  evidenceJson           Json
+  recommendedActionsJson Json
+  rawFindingJson         Json
+  detectedAt             DateTime
+  resolvedAt             DateTime?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  remediations           Remediation[]
+  alerts                 AlertLog[]
+
+  @@index([severity])
+  @@index([domain])
+  @@index([status])
+  @@index([detectedAt])
+  @@index([executionId])
+}
+
+model Remediation {
+  id          String   @id @default(cuid())
+  incidentId  String
+  agentType   String
+  actionTaken Json
+  success     Boolean
+  responseJson Json
+  executedAt  DateTime @default(now())
+  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@index([executedAt])
+}
+
+model AlertLog {
+  id             String              @id @default(cuid())
+  incidentId     String
+  channel        AlertChannel
+  status         AlertDeliveryStatus
+  messagePreview String
+  sentAt         DateTime            @default(now())
+  incident       Incident            @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@index([channel])
+  @@index([sentAt])
+}
+
+model LogBatch {
+  id           String   @id @default(cuid())
+  source       String
+  rawLogsJson  Json
+  analyzedAt   DateTime @default(now())
+  findingsCount Int
+  executionId  String
+
+  @@index([analyzedAt])
+  @@index([executionId])
+  @@index([source])
+}
+
+model CopilotSession {
+  id          String          @id @default(cuid())
+  userId      String
+  language    CopilotLanguage
+  messagesJson Json
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([updatedAt])
+}

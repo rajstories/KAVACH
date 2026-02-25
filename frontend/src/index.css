@@ -1,0 +1,35 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --kavach-bg: #020617;
+  --kavach-panel: #0f172a;
+  --kavach-accent: #ef4444;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 450px at 90% -20%, rgba(239, 68, 68, 0.2), transparent 55%),
+    radial-gradient(800px 280px at 10% -10%, rgba(14, 116, 144, 0.35), transparent 60%),
+    var(--kavach-bg);
+  font-family: "Space Grotesk", "Noto Sans Devanagari", sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+}
