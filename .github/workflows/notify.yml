@@ -1,0 +1,140 @@
+name: KAVACH Team Progress Notifier
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    types: [opened, closed, merged]
+    branches:
+      - dev
+
+jobs:
+  notify-push:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+
+      - name: Get changed files
+        id: files
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD | head -8 | tr '\n' ', ')
+          echo "changed=$FILES" >> $GITHUB_OUTPUT
+          LINES=$(git diff --stat HEAD~1 HEAD | tail -1)
+          echo "stats=$LINES" >> $GITHUB_OUTPUT
+
+      - name: Send Push Notification to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          PUSHER="${{ github.actor }}"
+          BRANCH="${{ github.ref_name }}"
+          MESSAGE="${{ github.event.head_commit.message }}"
+          FILES="${{ steps.files.outputs.changed }}"
+          STATS="${{ steps.files.outputs.stats }}"
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          
+          # Assign emoji based on branch
+          if [[ "$BRANCH" == *"raj"* ]]; then EMOJI="🤖"; WHO="Raj (AI/Agents)"
+          elif [[ "$BRANCH" == *"ml"* ]]; then EMOJI="🧠"; WHO="ML Member"
+          elif [[ "$BRANCH" == *"frontend"* ]]; then EMOJI="🎨"; WHO="Frontend Member"  
+          elif [[ "$BRANCH" == *"fullstack"* ]]; then EMOJI="⚙️"; WHO="Fullstack Member"
+          else EMOJI="📦"; WHO="$PUSHER"
+          fi
+          
+          # Assign status based on commit message keywords
+          if echo "$MESSAGE" | grep -qi "fix\|bug\|error"; then STATUS="🔧 Bug Fix"
+          elif echo "$MESSAGE" | grep -qi "feat\|add\|new\|build"; then STATUS="✨ New Feature"
+          elif echo "$MESSAGE" | grep -qi "test\|check\|verify"; then STATUS="🧪 Testing"
+          elif echo "$MESSAGE" | grep -qi "style\|ui\|design"; then STATUS="🎨 UI Update"
+          elif echo "$MESSAGE" | grep -qi "docs\|readme"; then STATUS="📝 Docs"
+          else STATUS="📦 Update"
+          fi
+
+          TEXT="🔔 <b>KAVACH — Code Update</b>
+          
+$EMOJI <b>$WHO</b>
+🌿 Branch: <code>$BRANCH</code>
+$STATUS: <i>$MESSAGE</i>
+
+📁 Files: <code>$FILES</code>
+📊 Changes: $STATS
+
+🔗 <a href='$COMMIT_URL'>View Commit</a>"
+          
+          curl -s -X POST \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d chat_id="${CHAT_ID}" \
+            -d text="$TEXT" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview="true"
+
+  notify-pr-opened:
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send PR Opened Notification
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          TITLE="${{ github.event.pull_request.title }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          FROM="${{ github.event.pull_request.head.ref }}"
+          TO="${{ github.event.pull_request.base.ref }}"
+          FILES="${{ github.event.pull_request.changed_files }}"
+          ADDITIONS="${{ github.event.pull_request.additions }}"
+          DELETIONS="${{ github.event.pull_request.deletions }}"
+          
+          TEXT="🔀 <b>KAVACH — Pull Request Opened</b>
+
+👤 By: <b>$AUTHOR</b>
+📋 <i>$TITLE</i>
+
+$FROM → $TO
+📁 $FILES files changed (+$ADDITIONS / -$DELETIONS)
+
+⚡ Raj review karo aur merge karo!
+🔗 <a href='$PR_URL'>Review PR</a>"
+
+          curl -s -X POST \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d chat_id="${CHAT_ID}" \
+            -d text="$TEXT" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview="true"
+
+  notify-pr-merged:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send PR Merged Notification
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          TITLE="${{ github.event.pull_request.title }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          
+          TEXT="✅ <b>KAVACH — Code Merged to Dev</b>
+
+🎉 PR merged successfully!
+👤 By: <b>$AUTHOR</b>
+📋 <i>$TITLE</i>
+
+Sabhi members: <code>git pull origin dev</code> karo!
+🔗 <a href='$PR_URL'>View PR</a>"
+
+          curl -s -X POST \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d chat_id="${CHAT_ID}" \
+            -d text="$TEXT" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview="true"

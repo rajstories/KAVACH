@@ -1,34 +1,61 @@
-# Node / JS
+# Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+.pnp
+.pnp.js
 
-# Build artifacts
+# Environment files — NEVER commit these
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Build outputs
 dist/
 build/
-coverage/
+out/
 
-# Env
-.env
-.env.*
-!.env.example
+# TypeScript
+*.tsbuildinfo
+
+# Python
+pycache/
+*.py[cod]
+*$py.class
+*.pyc
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# ML Models (too large for git)
+*.pkl
+*.joblib
+*.h5
+*.model
+ml-service/models/
 
 # Logs
 logs/
-*.log
+.log
+npm-debug.log
 
-# Python
-__pycache__/
-*.pyc
-.venv/
-
-# IDE / OS
-.DS_Store
-.vscode/
+# IDE
 .idea/
+.vscode/settings.json
+*.swp
+*.swo
+.DS_Store
 
 # Prisma
-backend/prisma/dev.db
-backend/prisma/dev.db-journal
+backend/prisma/migrations/
+
+# Docker
+.docker/
+
+# Coverage
+coverage/
+.nyc_output/
