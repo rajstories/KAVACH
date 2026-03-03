@@ -35,7 +35,7 @@
 
 <br/>
 
-**[🔴 Live Demo](#) · [📹 Watch Demo](#) · [📊 Dashboard](#) · [📖 Docs](#)**
+**[🔴 Live Demo](https://kavach-2.vercel.app/) · [📹 Watch Demo](#) · [📊 Dashboard](https://kavach-2.vercel.app/dashboard) 
 
 </div>
 

@@ -1,101 +1,154 @@
+import { PrismaClient } from "@prisma/client";
 import { logger } from "../../config/logger";
-import { prisma } from "../../db/client";
 import type { PrioritizedIncident, RemediationResult } from "../../types";
 
-/**
- * AUTH & IDENTITY REMEDIATION AGENT
- * Handles: brute_force, credential_stuffing, unauthorized_access
- * Actions: block_ip, lock_account, revoke_token, enable_lockout_policy
- * Simulates calling government identity management APIs
- */
-function randomDelay(): Promise<void> {
-  const delayMs = 100 + Math.floor(Math.random() * 400);
-  return new Promise((resolve) => setTimeout(resolve, delayMs));
+const prisma = new PrismaClient();
+
+type ActionResult = {
+  action: string;
+  target: string;
+  success: true;
+  timestamp: string;
+  message: string;
+};
+
+function waitRandomDelay(): Promise<void> {
+  const ms = 100 + Math.floor(Math.random() * 301);
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function simulateBlockIP(ip: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated block_ip action", { ip });
-  return { action: "block_ip", success: true, detail: `Firewall rule added for ${ip}` };
-}
-
-async function simulateLockAccount(identifier: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated lock_account action", { identifier });
-  return { action: "lock_account", success: true, detail: `Account ${identifier} locked for forensic review` };
-}
-
-async function simulateRevokeTokens(identifier: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated revoke_token action", { identifier });
-  return { action: "revoke_token", success: true, detail: `Issued tokens revoked for ${identifier}` };
-}
-
-async function simulateEnableLockoutPolicy(): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated enable_lockout_policy action");
+async function simulateBlockIP(ip: string): Promise<ActionResult> {
+  logger.info(`AUTH AGENT: Executing block_ip on ${ip}`);
+  await waitRandomDelay();
   return {
-    action: "enable_lockout_policy",
+    action: "block_ip",
+    target: ip,
     success: true,
-    detail: "Adaptive lockout policy enforced across identity service",
+    timestamp: new Date().toISOString(),
+    message: `Blocked IP ${ip} at perimeter firewall and edge gateway ACL`,
   };
 }
 
-async function simulateAuditLog(identifier: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated audit log action", { identifier });
-  return { action: "audit_log", success: true, detail: `Audit trail generated for ${identifier}` };
+async function simulateLockAccount(username: string): Promise<ActionResult> {
+  logger.info(`AUTH AGENT: Executing lock_account on ${username}`);
+  await waitRandomDelay();
+  return {
+    action: "lock_account",
+    target: username,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Locked government user account '${username}' and forced re-verification`,
+  };
 }
 
-export async function remediateAuth(incident: PrioritizedIncident): Promise<RemediationResult> {
+async function simulateRevokeTokens(userId: string): Promise<ActionResult> {
+  logger.info(`AUTH AGENT: Executing revoke_tokens on ${userId}`);
+  await waitRandomDelay();
+  return {
+    action: "revoke_tokens",
+    target: userId,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Revoked all active session tokens linked to ${userId}`,
+  };
+}
+
+async function simulateEnableAccountLockout(service: string): Promise<ActionResult> {
+  logger.info(`AUTH AGENT: Executing enable_account_lockout on ${service}`);
+  await waitRandomDelay();
+  return {
+    action: "enable_account_lockout",
+    target: service,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Enabled progressive lockout policy on ${service} after repeated failed logins`,
+  };
+}
+
+async function simulateAuditLog(incident: PrioritizedIncident): Promise<ActionResult> {
+  logger.info(`AUTH AGENT: Executing audit_log on ${incident.incidentId}`);
+  await waitRandomDelay();
+  return {
+    action: "audit_log",
+    target: incident.incidentId,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Created tamper-proof security audit record for incident ${incident.incidentId}`,
+  };
+}
+
+function extractUsernameFromEvidence(incident: PrioritizedIncident): string {
+  const patterns = [/user(?:name)?=([A-Za-z0-9_.-]+)/i, /\bfor\s+([A-Za-z0-9_.-]+)\b/i];
+  for (const line of incident.evidence) {
+    for (const pattern of patterns) {
+      const match = line.match(pattern);
+      if (match?.[1]) {
+        return match[1];
+      }
+    }
+  }
+
+  return incident.offender.value;
+}
+
+export async function remediateAuth(incident: PrioritizedIncident): Promise<RemediationResult & { actions: ActionResult[] }> {
   try {
-    const actions: Array<{ action: string; success: boolean; detail: string }> = [];
+    let actions: ActionResult[] = [];
 
     switch (incident.classification) {
-      case "brute_force":
-        actions.push(await simulateBlockIP(incident.offender.value));
-        actions.push(await simulateLockAccount(incident.offender.value));
-        actions.push(await simulateEnableLockoutPolicy());
+      case "brute_force": {
+        const username = extractUsernameFromEvidence(incident);
+        const parallelActions = await Promise.all([
+          simulateBlockIP(incident.offender.value),
+          simulateLockAccount(username),
+        ]);
+        const lockout = await simulateEnableAccountLockout(incident.affectedService);
+        actions = [...parallelActions, lockout];
         break;
+      }
       case "credential_stuffing":
-        actions.push(await simulateBlockIP(incident.offender.value));
-        actions.push(await simulateRevokeTokens(incident.offender.value));
+        actions = await Promise.all([
+          simulateBlockIP(incident.offender.value),
+          simulateRevokeTokens(incident.affectedService),
+        ]);
         break;
       case "unauthorized_access":
-        actions.push(await simulateLockAccount(incident.offender.value));
-        actions.push(await simulateAuditLog(incident.offender.value));
+        actions = await Promise.all([
+          simulateLockAccount(incident.offender.value),
+          simulateAuditLog(incident),
+        ]);
         break;
       default:
-        actions.push(await simulateAuditLog(incident.offender.value));
+        actions = [await simulateAuditLog(incident)];
         break;
     }
 
-    const success = actions.every((action) => action.success);
-    const executedAt = new Date().toISOString();
+    const executedAt = new Date();
 
     await prisma.remediation.create({
       data: {
         incidentId: incident.incidentId,
-        agentType: "AUTH",
-        actionTaken: actions.map((action) => action.action),
-        success,
+        agentType: "AUTH_IDENTITY",
+        actionTaken: JSON.stringify(actions),
+        success: true,
         responseJson: {
-          details: actions,
-          offender: incident.offender,
-          classification: incident.classification,
+          incidentId: incident.incidentId,
+          actions,
         },
+        executedAt,
       },
     });
 
     return {
       incidentId: incident.incidentId,
       agentType: "AUTH",
-      success,
+      actions,
       actionsTaken: actions.map((action) => action.action),
+      success: true,
       response: {
-        details: actions,
+        actions,
       },
-      executedAt,
+      executedAt: executedAt.toISOString(),
     };
   } catch (error) {
     logger.error("Auth remediation failed", {

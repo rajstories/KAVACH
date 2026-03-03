@@ -1,169 +1,317 @@
 import { randomUUID } from "node:crypto";
+import { PrismaClient } from "@prisma/client";
 import { Router } from "express";
 import { analyzeLogs } from "../agents/commanderAgent";
 import { dispatch } from "../agents/dispatcher";
 import { processFindings } from "../agents/immediatorAgent";
 import { logger } from "../config/logger";
-import { prisma } from "../db/client";
 import { AppError } from "../middleware/errorHandler";
 import { detectAnomalies } from "../ml/anomalyDetector";
 import type { LogEntry, RawLog } from "../types";
 
 const router = Router();
+const prisma = new PrismaClient();
 
-type ScenarioType = "brute_force" | "ddos" | "exfiltration" | "sql_injection";
+type ScenarioType =
+  | "brute_force"
+  | "ddos"
+  | "sql_injection"
+  | "data_exfiltration"
+  | "credential_stuffing";
 
-function createRawLog(overrides: Partial<RawLog>): RawLog {
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomIpFromPrefix(prefix: string): string {
+  return `${prefix}.${randomInt(1, 254)}.${randomInt(1, 254)}`;
+}
+
+function baseLog(overrides: Partial<RawLog>): RawLog {
   return {
     timestamp: new Date().toISOString(),
-    source_ip: "10.12.45.10",
-    endpoint: "/api/v1/auth/login",
+    source_ip: "10.0.0.10",
+    endpoint: "/health",
+    method: "GET",
     status_code: 200,
-    method: "POST",
-    user_agent: "GovPortalClient/1.0",
-    response_time: 120,
-    bytes_sent: 2048,
-    source: "voter-auth-api",
+    user_agent: "KAVACH-Simulator/1.0",
+    response_time: randomInt(30, 180),
+    bytes_sent: randomInt(500, 4000),
+    user_id: "citizen-user",
     service: "voter-auth-api",
+    source: "voter-auth-api",
     ...overrides,
   };
 }
 
-function generateScenarioLogs(scenario: ScenarioType): RawLog[] {
-  const logs: RawLog[] = [];
+function generateBruteForceScenario(): RawLog[] {
+  const usernames = ["admin", "root", "dbadmin", "superuser", "test"];
+  const start = Date.now() - 5 * 60 * 1000;
+  const intervalMs = Math.floor((5 * 60 * 1000) / 45);
 
-  if (scenario === "brute_force") {
-    for (let i = 0; i < 120; i += 1) {
-      logs.push(
-        createRawLog({
-          source_ip: "185.199.110.21",
-          endpoint: "/voter/login",
-          status_code: 401,
-          method: "POST",
-          response_time: 90 + i,
-          source: "voter-auth-api",
-          service: "voter-auth-api",
-          user_id: `voter-${1000 + (i % 25)}`,
-        }),
-      );
-    }
-  }
-
-  if (scenario === "ddos") {
-    for (let i = 0; i < 250; i += 1) {
-      logs.push(
-        createRawLog({
-          source_ip: `203.0.113.${(i % 70) + 1}`,
-          endpoint: "/aadhaar/verify",
-          status_code: i % 3 === 0 ? 503 : 429,
-          method: "POST",
-          response_time: 800 + i,
-          bytes_sent: 1024,
-          source: "aadhaar-verify-service",
-          service: "aadhaar-verify-service",
-        }),
-      );
-    }
-  }
-
-  if (scenario === "exfiltration") {
-    for (let i = 0; i < 80; i += 1) {
-      logs.push(
-        createRawLog({
-          source_ip: "172.16.77.9",
-          endpoint: `/municipal/reports/download?file=${10000 + i}`,
-          status_code: 200,
-          method: "GET",
-          response_time: 350,
-          bytes_sent: 8_000_000 + i * 30_000,
-          source: "municipal-portal",
-          service: "municipal-portal",
-          user_id: "contractor-43",
-        }),
-      );
-    }
-  }
-
-  if (scenario === "sql_injection") {
-    for (let i = 0; i < 60; i += 1) {
-      logs.push(
-        createRawLog({
-          source_ip: "198.51.100.34",
-          endpoint: "/election/candidate?name=' OR 1=1 --",
-          status_code: i % 2 === 0 ? 500 : 403,
-          method: "GET",
-          response_time: 510,
-          source: "election-commission-api",
-          service: "election-commission-api",
-        }),
-      );
-    }
-  }
-
-  for (let i = 0; i < 40; i += 1) {
-    logs.push(
-      createRawLog({
-        source_ip: `10.10.0.${(i % 20) + 10}`,
-        endpoint: "/health",
-        status_code: 200,
-        method: "GET",
-        response_time: 45,
-        bytes_sent: 512,
-        source: "rti-portal",
-        service: "rti-portal",
-      }),
-    );
-  }
-
-  return logs;
+  return Array.from({ length: 45 }, (_, index) =>
+    baseLog({
+      timestamp: new Date(start + intervalMs * index).toISOString(),
+      source_ip: "203.0.113.50",
+      endpoint: "/auth/login",
+      method: "POST",
+      status_code: 401,
+      user_agent: "Mozilla/5.0 (BruteForceRunner)",
+      response_time: randomInt(70, 210),
+      bytes_sent: randomInt(800, 1800),
+      user_id: usernames[index % usernames.length],
+      service: "voter-auth-api",
+      source: "voter-auth-api",
+    }),
+  );
 }
 
-async function runPipeline(rawLogs: RawLog[]): Promise<{
-  executionId: string;
-  anomalies: number;
-  findings: number;
-  incidents: number;
-}> {
-  const executionId = randomUUID();
+function generateDDoSScenario(): RawLog[] {
+  const ipPrefixes = ["185", "91", "45"];
+  const distinctIps = Array.from({ length: 15 }, (_, i) => {
+    const prefix = ipPrefixes[i % ipPrefixes.length];
+    return `${prefix}.${randomInt(1, 254)}.${randomInt(1, 254)}.${randomInt(1, 254)}`;
+  });
+  const start = Date.now() - 60 * 1000;
 
-  const anomalies = await detectAnomalies(rawLogs);
-  const logsForCommander = (anomalies.length > 0 ? anomalies.map((item) => item.log) : rawLogs).map<LogEntry>((log) => ({
-    ...log,
-    source: log.source ?? "unknown-source",
-    service: log.service ?? log.source ?? "unknown-service",
-  }));
+  return Array.from({ length: 200 }, (_, index) =>
+    baseLog({
+      timestamp: new Date(start + randomInt(0, 60_000)).toISOString(),
+      source_ip: distinctIps[index % distinctIps.length],
+      endpoint: "/api/citizen/data",
+      method: "GET",
+      status_code: 429,
+      user_agent: "FloodBot/3.4",
+      response_time: randomInt(400, 1800),
+      bytes_sent: randomInt(600, 2500),
+      user_id: `guest-${index % 20}`,
+      service: "municipal-portal",
+      source: "municipal-portal",
+    }),
+  );
+}
 
-  const findings = await analyzeLogs(logsForCommander);
-  const incidents = await processFindings(findings);
-  await dispatch(incidents);
+function generateSQLInjectionScenario(): RawLog[] {
+  const payloadEndpoints = [
+    "/search?id=1' OR '1'='1",
+    "/records?search='; DROP TABLE users;--",
+    "/users?user=admin'--",
+  ];
+  const start = Date.now() - 10 * 60 * 1000;
+
+  return Array.from({ length: 12 }, (_, index) =>
+    baseLog({
+      timestamp: new Date(start + index * 35_000).toISOString(),
+      source_ip: randomIpFromPrefix("198.51"),
+      endpoint: payloadEndpoints[index % payloadEndpoints.length],
+      method: "GET",
+      status_code: index % 3 === 0 ? 200 : 400,
+      user_agent: "SQLProbe/1.2",
+      response_time: randomInt(120, 420),
+      bytes_sent: randomInt(1000, 7000),
+      user_id: `rti-user-${index}`,
+      service: "rti-portal",
+      source: "rti-portal",
+    }),
+  );
+}
+
+function generateDataExfiltrationScenario(): RawLog[] {
+  const endpoints = ["/api/voter/export", "/api/records/download"];
+  const sourceIp = "172.16.88.23";
+  const start = Date.now() - 6 * 60 * 1000;
+
+  return Array.from({ length: 8 }, (_, index) =>
+    baseLog({
+      timestamp: new Date(start + index * 42_000).toISOString(),
+      source_ip: sourceIp,
+      endpoint: endpoints[index % endpoints.length],
+      method: "GET",
+      status_code: 200,
+      user_agent: "BulkDownloader/2.0",
+      response_time: randomInt(300, 950),
+      bytes_sent: randomInt(500_000, 2_000_000),
+      user_id: "ec-export-operator",
+      service: "election-commission-api",
+      source: "election-commission-api",
+    }),
+  );
+}
+
+function generateCredentialStuffingScenario(): RawLog[] {
+  const usernames = [
+    "aadhaar_admin",
+    "data-entry1",
+    "uidai_ops",
+    "service_account",
+    "enrolment_supervisor",
+    "citizen_helpdesk",
+  ];
+  const start = Date.now() - 8 * 60 * 1000;
+
+  return Array.from({ length: 35 }, (_, index) =>
+    baseLog({
+      timestamp: new Date(start + index * 11_000).toISOString(),
+      source_ip: `203.0.${index + 10}.${randomInt(1, 254)}`,
+      endpoint: "/aadhaar/auth/login",
+      method: "POST",
+      status_code: 401,
+      user_agent: "CredentialSpray/5.1",
+      response_time: randomInt(90, 240),
+      bytes_sent: randomInt(900, 2000),
+      user_id: usernames[index % usernames.length],
+      service: "aadhaar-verify-service",
+      source: "aadhaar-verify-service",
+    }),
+  );
+}
+
+function buildScenarioLogs(scenario: ScenarioType): RawLog[] {
+  switch (scenario) {
+    case "brute_force":
+      return generateBruteForceScenario();
+    case "ddos":
+      return generateDDoSScenario();
+    case "sql_injection":
+      return generateSQLInjectionScenario();
+    case "data_exfiltration":
+      return generateDataExfiltrationScenario();
+    case "credential_stuffing":
+      return generateCredentialStuffingScenario();
+    default:
+      return generateBruteForceScenario();
+  }
+}
+
+function sanitizeLog(input: unknown, defaultSource: string): RawLog | null {
+  if (typeof input !== "object" || input === null) {
+    return null;
+  }
+
+  const raw = input as Partial<RawLog>;
+  if (!raw.timestamp || !raw.source_ip || !raw.endpoint || !raw.method || typeof raw.status_code !== "number") {
+    return null;
+  }
 
   return {
-    executionId,
-    anomalies: anomalies.length,
-    findings: findings.length,
-    incidents: incidents.length,
+    timestamp: raw.timestamp,
+    source_ip: raw.source_ip,
+    endpoint: raw.endpoint,
+    method: raw.method,
+    status_code: raw.status_code,
+    user_agent: raw.user_agent ?? "UnknownAgent/0.0",
+    response_time: typeof raw.response_time === "number" ? raw.response_time : 0,
+    bytes_sent: typeof raw.bytes_sent === "number" ? raw.bytes_sent : 0,
+    user_id: raw.user_id,
+    service: raw.service ?? raw.source ?? defaultSource,
+    source: raw.source ?? raw.service ?? defaultSource,
   };
+}
+
+function toLogEntry(log: RawLog, fallbackSource: string): LogEntry {
+  return {
+    ...log,
+    source: log.source ?? fallbackSource,
+    service: log.service ?? log.source ?? fallbackSource,
+  };
+}
+
+async function runFullPipeline(params: {
+  logs: RawLog[];
+  source: string;
+  scenario?: ScenarioType;
+}): Promise<{
+  executionId: string;
+  logsReceived: number;
+  logsAnalyzed: number;
+  findingsCount: number;
+  incidentsCreated: number;
+  processingTimeMs: number;
+  syntheticLogsGenerated?: number;
+  scenarioUsed?: ScenarioType;
+}> {
+  const startedAt = Date.now();
+  const executionId = `exec-${Date.now()}-${randomUUID().slice(0, 8)}`;
+
+  try {
+    const logEntries = params.logs.map((log) => toLogEntry(log, params.source));
+
+    logger.info("/api/logs pipeline started", {
+      executionId,
+      logsReceived: logEntries.length,
+      source: params.source,
+      scenario: params.scenario,
+    });
+
+    const anomalyResults = await detectAnomalies(logEntries);
+    const flaggedLogs = anomalyResults.filter(
+      (item) => item.is_anomalous || item.anomaly_score > 0.6,
+    );
+
+    const logsForAnalysis = (flaggedLogs.length > 0 ? flaggedLogs.map((item) => item.log) : logEntries).map((log) =>
+      toLogEntry(log, params.source),
+    );
+
+    const findings = await analyzeLogs(logsForAnalysis);
+    const prioritizedIncidents = await processFindings(findings);
+    await dispatch(prioritizedIncidents);
+
+    const processingTimeMs = Date.now() - startedAt;
+
+    logger.info("/api/logs pipeline completed", {
+      executionId,
+      logsReceived: logEntries.length,
+      logsAnalyzed: logsForAnalysis.length,
+      findingsCount: findings.length,
+      incidentsCreated: prioritizedIncidents.length,
+      processingTimeMs,
+    });
+
+    return {
+      executionId,
+      logsReceived: logEntries.length,
+      logsAnalyzed: logsForAnalysis.length,
+      findingsCount: findings.length,
+      incidentsCreated: prioritizedIncidents.length,
+      processingTimeMs,
+      scenarioUsed: params.scenario,
+      syntheticLogsGenerated: params.scenario ? params.logs.length : undefined,
+    };
+  } catch (error) {
+    logger.error("/api/logs pipeline failed", {
+      executionId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    throw error;
+  }
 }
 
 router.post("/ingest", async (req, res, next) => {
   try {
-    const logs = req.body.logs as RawLog[] | undefined;
-    if (!logs || logs.length === 0) {
-      throw new AppError("logs array is required", 400);
+    const payload = req.body as { logs?: unknown[]; source?: string };
+    const source = payload.source ?? "unknown-source";
+
+    if (!Array.isArray(payload.logs) || payload.logs.length === 0) {
+      throw new AppError("Request body must include non-empty logs array", 400);
     }
 
-    const result = await runPipeline(logs);
+    const validLogs = payload.logs
+      .map((log) => sanitizeLog(log, source))
+      .filter((log): log is RawLog => log !== null);
 
-    res.json({
-      success: true,
-      pipeline: {
-        stage1_ml_screening: `${result.anomalies} anomalies passed`,
-        stage2_ai_analysis: `${result.findings} findings`,
-        stage3_prioritization: `${result.incidents} incidents`,
-        stage4_dispatch: "completed",
-        stage5_alerts: "triggered for HIGH/CRITICAL",
-      },
-      ...result,
+    if (validLogs.length === 0) {
+      throw new AppError("No valid logs found in payload", 400);
+    }
+
+    const result = await runFullPipeline({ logs: validLogs, source });
+
+    res.status(200).json({
+      executionId: result.executionId,
+      logsReceived: result.logsReceived,
+      logsAnalyzed: result.logsAnalyzed,
+      findingsCount: result.findingsCount,
+      incidentsCreated: result.incidentsCreated,
+      processingTimeMs: result.processingTimeMs,
     });
   } catch (error) {
     next(error);
@@ -172,57 +320,89 @@ router.post("/ingest", async (req, res, next) => {
 
 router.post("/simulate", async (req, res, next) => {
   try {
-    const scenario = (req.body.scenario as ScenarioType | undefined) ?? "brute_force";
-    const allowed: ScenarioType[] = ["brute_force", "ddos", "exfiltration", "sql_injection"];
+    const payload = req.body as { scenario?: string };
+    const scenario = (payload.scenario ?? "brute_force") as ScenarioType;
+    const allowed: ScenarioType[] = [
+      "brute_force",
+      "ddos",
+      "sql_injection",
+      "data_exfiltration",
+      "credential_stuffing",
+    ];
+
     if (!allowed.includes(scenario)) {
-      throw new AppError("Invalid scenario. Use brute_force|ddos|exfiltration|sql_injection", 400);
+      throw new AppError(
+        "Invalid scenario. Use brute_force|ddos|sql_injection|data_exfiltration|credential_stuffing",
+        400,
+      );
     }
 
-    const syntheticLogs = generateScenarioLogs(scenario);
+    const syntheticLogs = buildScenarioLogs(scenario);
+    if (syntheticLogs.length === 0) {
+      throw new AppError("Synthetic generator returned no logs", 500);
+    }
 
-    logger.info("Running simulation", {
+    const source = syntheticLogs[0].service ?? syntheticLogs[0].source ?? "simulator";
+
+    logger.info("Running synthetic simulation", {
       scenario,
-      generatedLogs: syntheticLogs.length,
+      syntheticLogsGenerated: syntheticLogs.length,
+      source,
     });
 
-    const result = await runPipeline(syntheticLogs);
-
-    const latestIncidents = await prisma.incident.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      include: {
-        remediations: true,
-        alerts: true,
-      },
+    const result = await runFullPipeline({
+      logs: syntheticLogs,
+      source,
+      scenario,
     });
 
-    res.json({
-      success: true,
-      scenario,
-      generatedLogs: syntheticLogs.length,
-      progress: [
-        { step: "Logs Ingested", status: "done" },
-        { step: "ML Screening", status: "done", detail: `${result.anomalies} flagged` },
-        { step: "AI Analysis", status: "done", detail: `${result.findings} findings` },
-        { step: "Remediation", status: "done", detail: `${result.incidents} incidents handled` },
-        { step: "Alerts", status: "done", detail: "HIGH/CRITICAL alerts dispatched" },
-      ],
-      latestIncidents,
-      ...result,
+    res.status(200).json({
+      executionId: result.executionId,
+      logsReceived: result.logsReceived,
+      logsAnalyzed: result.logsAnalyzed,
+      findingsCount: result.findingsCount,
+      incidentsCreated: result.incidentsCreated,
+      processingTimeMs: result.processingTimeMs,
+      scenarioUsed: result.scenarioUsed,
+      syntheticLogsGenerated: result.syntheticLogsGenerated,
     });
   } catch (error) {
     next(error);
   }
 });
 
-router.get("/batches", async (_req, res, next) => {
+router.get("/batches", async (req, res, next) => {
   try {
-    const batches = await prisma.logBatch.findMany({
-      orderBy: { analyzedAt: "desc" },
-      take: 50,
-    });
+    const page = Number.parseInt(String(req.query.page ?? "1"), 10);
+    const limit = Number.parseInt(String(req.query.limit ?? "20"), 10);
+    const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 20;
 
-    res.json(batches);
+    const [total, batches] = await Promise.all([
+      prisma.logBatch.count(),
+      prisma.logBatch.findMany({
+        orderBy: { analyzedAt: "desc" },
+        skip: (safePage - 1) * safeLimit,
+        take: safeLimit,
+        select: {
+          id: true,
+          source: true,
+          findingsCount: true,
+          executionId: true,
+          analyzedAt: true,
+        },
+      }),
+    ]);
+
+    res.status(200).json({
+      data: batches,
+      meta: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    });
   } catch (error) {
     next(error);
   }

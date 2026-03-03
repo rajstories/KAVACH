@@ -10,17 +10,25 @@ const scenarioOptions = [
   { label: "Election Commission SQL Injection", value: "sql_injection" },
 ];
 
-const baseSteps = [
-  { step: "Logs Ingested", status: "pending" as const },
-  { step: "ML Screening", status: "pending" as const },
-  { step: "AI Analysis", status: "pending" as const },
-  { step: "Remediation", status: "pending" as const },
-  { step: "Alerts", status: "pending" as const },
+type StepStatus = "pending" | "running" | "done";
+
+interface Step {
+  step: string;
+  status: StepStatus;
+  detail?: string;
+}
+
+const baseSteps: Step[] = [
+  { step: "Logs Ingested", status: "pending" },
+  { step: "ML Screening", status: "pending" },
+  { step: "AI Analysis", status: "pending" },
+  { step: "Remediation", status: "pending" },
+  { step: "Alerts", status: "pending" },
 ];
 
 export default function SimulatorPage() {
   const [scenario, setScenario] = useState("brute_force");
-  const [steps, setSteps] = useState(baseSteps);
+  const [steps, setSteps] = useState<Step[]>(baseSteps);
   const mutation = useSimulationMutation();
 
   useEffect(() => {
@@ -35,14 +43,14 @@ export default function SimulatorPage() {
       setSteps((prev) =>
         prev.map((item, index) => {
           if (index < current) {
-            return { ...item, status: "done" as const };
+            return { ...item, status: "done" as StepStatus };
           }
 
           if (index === current) {
-            return { ...item, status: "running" as const };
+            return { ...item, status: "running" as StepStatus };
           }
 
-          return { ...item, status: "pending" as const };
+          return { ...item, status: "pending" as StepStatus };
         }),
       );
 
@@ -65,7 +73,7 @@ export default function SimulatorPage() {
     setSteps(
       mutation.data.progress.map((item) => ({
         step: item.step,
-        status: "done" as const,
+        status: "done" as StepStatus,
         detail: item.detail,
       })),
     );

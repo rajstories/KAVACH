@@ -1,4 +1,4 @@
-import { CopilotLanguage, Severity } from "@prisma/client";
+import { CopilotLanguage, Prisma, Severity } from "@prisma/client";
 import { Router } from "express";
 import { anthropic, ANTHROPIC_MODEL } from "../config/anthropic";
 import { logger } from "../config/logger";
@@ -117,13 +117,13 @@ router.post("/message", async (req, res, next) => {
       where: { id: sessionId },
       update: {
         language: normalizedLanguage,
-        messagesJson: updatedMessages,
+        messagesJson: updatedMessages as unknown as Prisma.InputJsonValue,
       },
       create: {
         id: sessionId,
         userId: "ciso-demo",
         language: normalizedLanguage,
-        messagesJson: updatedMessages,
+        messagesJson: updatedMessages as unknown as Prisma.InputJsonValue,
       },
     });
 
