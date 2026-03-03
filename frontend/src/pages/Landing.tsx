@@ -147,7 +147,7 @@ function ThreatBadge({ label, x, y, delay, color }: { label: string; x: number; 
   const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     const run = () => {
       setVisible(true);
       const t1 = setTimeout(() => setBlocked(true), 1600);
