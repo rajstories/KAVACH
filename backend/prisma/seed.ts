@@ -1,4 +1,4 @@
-import { Domain, IncidentStatus, PrismaClient, Severity } from "@prisma/client";
+import { Domain, IncidentStatus, Prisma, PrismaClient, Severity } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -580,7 +580,7 @@ async function main(): Promise<void> {
         affectedService: incident.affectedService,
         evidenceJson: incident.evidenceJson,
         recommendedActionsJson: incident.recommendedActionsJson,
-        rawFindingJson: incident.rawFindingJson,
+        rawFindingJson: incident.rawFindingJson as Prisma.InputJsonValue,
         detectedAt: incident.detectedAt,
         resolvedAt: incident.resolvedAt,
       },
@@ -593,7 +593,7 @@ async function main(): Promise<void> {
           agentType: remediation.agentType,
           actionTaken: remediation.actionTaken,
           success: remediation.success,
-          responseJson: remediation.responseJson,
+          responseJson: remediation.responseJson as Prisma.InputJsonValue,
           executedAt: remediation.executedAt,
         },
       });

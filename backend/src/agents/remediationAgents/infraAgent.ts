@@ -1,116 +1,170 @@
+import { PrismaClient } from "@prisma/client";
 import { logger } from "../../config/logger";
-import { prisma } from "../../db/client";
 import type { PrioritizedIncident, RemediationResult } from "../../types";
 
-/**
- * INFRASTRUCTURE REMEDIATION AGENT
- * Handles: data_exfiltration, privilege_escalation, phishing_attempt
- * Actions: isolate_service, trigger_backup, force_mfa,
- *          notify_cert_in, escalate_to_human
- * For critical severity: always escalate_to_human
- */
-function randomDelay(): Promise<void> {
-  const delayMs = 100 + Math.floor(Math.random() * 400);
-  return new Promise((resolve) => setTimeout(resolve, delayMs));
+const prisma = new PrismaClient();
+
+type ActionResult = {
+  action: string;
+  target: string;
+  success: true;
+  timestamp: string;
+  message: string;
+};
+
+function waitRandomDelay(): Promise<void> {
+  const ms = 100 + Math.floor(Math.random() * 301);
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function simulateServiceIsolation(service: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated isolate_service action", { service });
-  return { action: "isolate_service", success: true, detail: `Service ${service} isolated to containment segment` };
-}
-
-async function simulateBackup(service: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated trigger_backup action", { service });
-  return { action: "trigger_backup", success: true, detail: `Immutable backup triggered for ${service}` };
-}
-
-async function simulateForceMFA(): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated force_mfa action");
-  return { action: "force_mfa", success: true, detail: "Emergency MFA enforcement enabled for privileged users" };
-}
-
-async function simulateAuditAll(): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated audit_all action");
-  return { action: "audit_all", success: true, detail: "Full infra audit initiated for anomalous access traces" };
-}
-
-async function simulateCertInDraft(incidentId: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated CERT-In draft notification", { incidentId });
+async function simulateServiceIsolation(service: string): Promise<ActionResult> {
+  logger.info(`INFRA AGENT: Executing isolate_service on ${service}`);
+  await waitRandomDelay();
   return {
-    action: "notify_cert_in",
+    action: "isolate_service",
+    target: service,
     success: true,
-    detail: `CERT-In draft prepared for incident ${incidentId}`,
+    timestamp: new Date().toISOString(),
+    message: `Isolated ${service} into restricted containment network segment`,
   };
 }
 
-async function simulateEscalateToHuman(): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated escalate_to_human action");
+async function simulateForceMFA(affectedUsers: string[]): Promise<ActionResult> {
+  const target = affectedUsers.length > 0 ? affectedUsers.join(",") : "all-privileged-users";
+  logger.info(`INFRA AGENT: Executing force_mfa on ${target}`);
+  await waitRandomDelay();
+  return {
+    action: "force_mfa",
+    target,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Forced MFA re-enrollment for users: ${target}`,
+  };
+}
+
+async function simulateTriggerBackup(service: string): Promise<ActionResult> {
+  logger.info(`INFRA AGENT: Executing trigger_backup on ${service}`);
+  await waitRandomDelay();
+  return {
+    action: "trigger_backup",
+    target: service,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Started immutable emergency backup for ${service}`,
+  };
+}
+
+async function simulateCreateCERTInDraft(incident: PrioritizedIncident): Promise<ActionResult> {
+  logger.info(`INFRA AGENT: Executing create_cert_in_draft on ${incident.incidentId}`);
+  await waitRandomDelay();
+  const draft = [
+    `CERT-In Draft: Incident ${incident.incidentId}`,
+    `Service: ${incident.affectedService}`,
+    `Classification: ${incident.classification}`,
+    `Severity: ${incident.severity.toUpperCase()}`,
+    `Offender: ${incident.offender.type}:${incident.offender.value}`,
+    `Detected At: ${incident.detectedAt}`,
+    "Immediate controls initiated by KAVACH autonomous remediation pipeline.",
+  ].join("\n");
+
+  return {
+    action: "create_cert_in_draft",
+    target: incident.incidentId,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: draft,
+  };
+}
+
+async function simulateEscalateToHuman(incident: PrioritizedIncident): Promise<ActionResult> {
+  logger.info(`INFRA AGENT: Executing escalate_to_human on ${incident.incidentId}`);
+  await waitRandomDelay();
+  const ticketKey = `KAVACH-${Date.now().toString().slice(-6)}`;
   return {
     action: "escalate_to_human",
+    target: ticketKey,
     success: true,
-    detail: "Escalated to on-call cyber incident commander",
+    timestamp: new Date().toISOString(),
+    message: `Created incident response ticket ${ticketKey} for human SOC commander`,
   };
 }
 
-export async function remediateInfra(incident: PrioritizedIncident): Promise<RemediationResult> {
+function extractAffectedUsers(incident: PrioritizedIncident): string[] {
+  const usernames = new Set<string>();
+
+  for (const line of incident.evidence) {
+    const match = line.match(/user(?:name)?=([A-Za-z0-9_.-]+)/i);
+    if (match?.[1]) {
+      usernames.add(match[1]);
+    }
+  }
+
+  if (usernames.size === 0 && incident.offender.type === "user") {
+    usernames.add(incident.offender.value);
+  }
+
+  return Array.from(usernames);
+}
+
+export async function remediateInfra(incident: PrioritizedIncident): Promise<RemediationResult & { actions: ActionResult[] }> {
   try {
-    const actions: Array<{ action: string; success: boolean; detail: string }> = [];
+    let actions: ActionResult[] = [];
 
     switch (incident.classification) {
       case "data_exfiltration":
-        actions.push(await simulateServiceIsolation(incident.affectedService));
-        actions.push(await simulateBackup(incident.affectedService));
-        actions.push(await simulateEscalateToHuman());
+        actions = await Promise.all([
+          simulateServiceIsolation(incident.affectedService),
+          simulateTriggerBackup(incident.affectedService),
+          simulateEscalateToHuman(incident),
+        ]);
         break;
       case "privilege_escalation":
-        actions.push(await simulateForceMFA());
-        actions.push(await simulateAuditAll());
+        actions = await Promise.all([
+          simulateForceMFA(extractAffectedUsers(incident)),
+          simulateServiceIsolation(incident.affectedService),
+        ]);
         break;
       case "phishing_attempt":
-        actions.push(await simulateForceMFA());
-        actions.push(await simulateEscalateToHuman());
+        actions = await Promise.all([
+          simulateCreateCERTInDraft(incident),
+          simulateEscalateToHuman(incident),
+        ]);
         break;
       default:
-        actions.push(await simulateAuditAll());
+        actions = [await simulateEscalateToHuman(incident)];
         break;
     }
 
-    if (incident.severity === "critical") {
-      actions.push(await simulateCertInDraft(incident.incidentId));
-      actions.push(await simulateEscalateToHuman());
+    if (incident.severity === "critical" && !actions.some((action) => action.action === "escalate_to_human")) {
+      actions.push(await simulateEscalateToHuman(incident));
     }
 
-    const success = actions.every((action) => action.success);
-    const executedAt = new Date().toISOString();
+    const executedAt = new Date();
 
     await prisma.remediation.create({
       data: {
         incidentId: incident.incidentId,
-        agentType: "INFRA",
-        actionTaken: actions.map((action) => action.action),
-        success,
+        agentType: "INFRASTRUCTURE",
+        actionTaken: JSON.stringify(actions),
+        success: true,
         responseJson: {
-          details: actions,
-          civicContext: incident.civicContext,
+          incidentId: incident.incidentId,
+          actions,
         },
+        executedAt,
       },
     });
 
     return {
       incidentId: incident.incidentId,
       agentType: "INFRA",
-      success,
+      actions,
       actionsTaken: actions.map((action) => action.action),
+      success: true,
       response: {
-        details: actions,
+        actions,
       },
-      executedAt,
+      executedAt: executedAt.toISOString(),
     };
   } catch (error) {
     logger.error("Infrastructure remediation failed", {
