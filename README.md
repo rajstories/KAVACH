@@ -35,13 +35,14 @@
 
 <br/>
 
-**[🔴 Live Demo](#) · [📹 Watch Demo](#) · [📊 Dashboard](#) · [📖 Docs](#)**
+[🔴 Live Demo](https://kavach-2.vercel.app/) · [📹 Watch Demo](#) · [📊 Dashboard](https://kavach-2.vercel.app/dashboard) 
 
 </div>
 
 ---
 
 <br/>
+<div align="center">
 
 ```
 ██╗  ██╗ █████╗ ██╗   ██╗ █████╗  ██████╗██╗  ██╗
@@ -54,8 +55,7 @@
   Autonomous Cyber Defense for India's Civic Infrastructure
   कवच — Detect → Analyze → Remediate → Report in seconds
 ```
-
----
+</div>
 
 ## 🇮🇳 The Problem India Faces Right Now
 

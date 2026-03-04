@@ -1,107 +1,157 @@
+import { PrismaClient } from "@prisma/client";
 import { logger } from "../../config/logger";
-import { prisma } from "../../db/client";
 import type { PrioritizedIncident, RemediationResult } from "../../types";
 
-/**
- * NETWORK & HTTP REMEDIATION AGENT
- * Handles: ddos, api_abuse, sql_injection, port_scan
- * Actions: apply_rate_limit, block_ip_range, enable_waf_rule,
- *          geo_block, traffic_scrubbing
- * Simulates calling WAF and network infrastructure APIs
- */
-function randomDelay(): Promise<void> {
-  const delayMs = 100 + Math.floor(Math.random() * 400);
-  return new Promise((resolve) => setTimeout(resolve, delayMs));
+const prisma = new PrismaClient();
+
+type ActionResult = {
+  action: string;
+  target: string;
+  success: true;
+  timestamp: string;
+  message: string;
+};
+
+function waitRandomDelay(): Promise<void> {
+  const ms = 100 + Math.floor(Math.random() * 301);
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function simulateRateLimit(ip: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated apply_rate_limit action", { ip });
-  return { action: "apply_rate_limit", success: true, detail: `Rate limiting enabled for traffic from ${ip}` };
+async function simulateRateLimit(ip: string, requestsPerMin: number): Promise<ActionResult> {
+  logger.info(`NETWORK AGENT: Executing apply_rate_limit on ${ip}`);
+  await waitRandomDelay();
+  return {
+    action: "apply_rate_limit",
+    target: ip,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Applied ${requestsPerMin} req/min cap for source ${ip}`,
+  };
 }
 
-async function simulateTrafficScrubbing(): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated traffic_scrubbing action");
-  return { action: "traffic_scrubbing", success: true, detail: "Traffic rerouted through scrubbing center" };
+async function simulateWAFRule(pattern: string, service: string): Promise<ActionResult> {
+  logger.info(`NETWORK AGENT: Executing enable_waf_rule on ${service}`);
+  await waitRandomDelay();
+  return {
+    action: "enable_waf_rule",
+    target: service,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Deployed WAF rule for pattern '${pattern}' on ${service}`,
+  };
 }
 
-async function simulateWAFRule(): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated enable_waf_rule action");
-  return { action: "enable_waf_rule", success: true, detail: "Managed WAF SQLi and API abuse rules enabled" };
+async function simulateTrafficScrubbing(service: string): Promise<ActionResult> {
+  logger.info(`NETWORK AGENT: Executing traffic_scrubbing on ${service}`);
+  await waitRandomDelay();
+  return {
+    action: "traffic_scrubbing",
+    target: service,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Routed ${service} traffic through anti-DDoS scrubbing center`,
+  };
 }
 
-async function simulateEndpointBlock(endpoint: string): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated endpoint block action", { endpoint });
-  return { action: "endpoint_block", success: true, detail: `Temporary endpoint block applied on ${endpoint}` };
+async function simulateEndpointBlock(endpoint: string): Promise<ActionResult> {
+  logger.info(`NETWORK AGENT: Executing endpoint_block on ${endpoint}`);
+  await waitRandomDelay();
+  return {
+    action: "endpoint_block",
+    target: endpoint,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Temporarily blocked endpoint ${endpoint} pending forensic validation`,
+  };
 }
 
-async function simulateApiKeyRevoke(): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated api key revoke action");
-  return { action: "api_key_revoke", success: true, detail: "Suspect API keys revoked and rotated" };
+async function simulateGeoBlock(country: string): Promise<ActionResult> {
+  logger.info(`NETWORK AGENT: Executing geo_block on ${country}`);
+  await waitRandomDelay();
+  return {
+    action: "geo_block",
+    target: country,
+    success: true,
+    timestamp: new Date().toISOString(),
+    message: `Blocked suspicious traffic geolocated to ${country}`,
+  };
 }
 
-async function simulateGeoBlock(): Promise<{ action: string; success: boolean; detail: string }> {
-  await randomDelay();
-  logger.info("Simulated geo_block action");
-  return { action: "geo_block", success: true, detail: "Temporary geo-blocking enforced for anomalous regions" };
+function inferWAFPattern(incident: PrioritizedIncident): string {
+  if (incident.classification === "sql_injection") {
+    return "SQLi payload signatures";
+  }
+
+  if (incident.classification === "api_abuse") {
+    return "API abuse + token replay";
+  }
+
+  return "Volumetric/abnormal network pattern";
 }
 
-export async function remediateNetwork(incident: PrioritizedIncident): Promise<RemediationResult> {
+export async function remediateNetwork(
+  incident: PrioritizedIncident,
+): Promise<RemediationResult & { actions: ActionResult[] }> {
   try {
-    const actions: Array<{ action: string; success: boolean; detail: string }> = [];
+    let actions: ActionResult[] = [];
 
     switch (incident.classification) {
       case "ddos":
-        actions.push(await simulateRateLimit(incident.offender.value));
-        actions.push(await simulateTrafficScrubbing());
-        actions.push(await simulateGeoBlock());
+        actions = await Promise.all([
+          simulateRateLimit(incident.offender.value, 120),
+          simulateTrafficScrubbing(incident.affectedService),
+        ]);
         break;
       case "sql_injection":
-        actions.push(await simulateWAFRule());
-        actions.push(await simulateEndpointBlock(incident.affectedService));
+        actions = await Promise.all([
+          simulateWAFRule(inferWAFPattern(incident), incident.affectedService),
+          simulateEndpointBlock(incident.affectedService),
+        ]);
         break;
       case "api_abuse":
-        actions.push(await simulateRateLimit(incident.offender.value));
-        actions.push(await simulateApiKeyRevoke());
+        actions = await Promise.all([
+          simulateRateLimit(incident.offender.value, 90),
+          simulateWAFRule(inferWAFPattern(incident), incident.affectedService),
+        ]);
         break;
       case "port_scan":
-        actions.push(await simulateWAFRule());
-        actions.push(await simulateGeoBlock());
+        actions = await Promise.all([
+          simulateGeoBlock("Unknown High-Risk Region"),
+          simulateRateLimit(incident.offender.value, 30),
+        ]);
         break;
       default:
-        actions.push(await simulateWAFRule());
+        actions = [
+          await simulateWAFRule("generic-protection", incident.affectedService),
+        ];
         break;
     }
 
-    const success = actions.every((action) => action.success);
-    const executedAt = new Date().toISOString();
-
+    const executedAt = new Date();
     await prisma.remediation.create({
       data: {
         incidentId: incident.incidentId,
-        agentType: "NETWORK",
-        actionTaken: actions.map((action) => action.action),
-        success,
+        agentType: "NETWORK_DEFENSE",
+        actionTaken: JSON.stringify(actions),
+        success: true,
         responseJson: {
-          details: actions,
-          affectedService: incident.affectedService,
+          incidentId: incident.incidentId,
+          actions,
         },
+        executedAt,
       },
     });
 
     return {
       incidentId: incident.incidentId,
       agentType: "NETWORK",
-      success,
+      actions,
       actionsTaken: actions.map((action) => action.action),
+      success: true,
       response: {
-        details: actions,
+        actions,
       },
-      executedAt,
+      executedAt: executedAt.toISOString(),
     };
   } catch (error) {
     logger.error("Network remediation failed", {
