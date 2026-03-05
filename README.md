@@ -488,21 +488,6 @@ KAVACH/
 
 ---
 
-## 👥 Team
-
-<div align="center">
-
-| Member | Role | Owns |
-|--------|------|------|
-| **Raj** | Team Lead · AI/Agents | Commander Agent · CISO Co-Pilot · Agent Pipeline |
-| **[ML Member]** | ML Engineer | Anomaly Detection · Feature Engineering · Synthetic Data |
-| **[Frontend Member]** | UI/UX · Frontend | Dashboard · Simulator · All React pages |
-| **[Fullstack Member]** | Backend · DevOps · Presenter | APIs · Database · Deployment · Demo Day |
-
-</div>
-
----
-
 ## 🏆 Hackathon
 
 <div align="center">
