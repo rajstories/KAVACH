@@ -4,7 +4,7 @@ import { TrendingUp, AlertTriangle, Clock } from 'lucide-react';
 
 export default function Dashboard() {
   return (
-    <div>
+    <div className="p-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
