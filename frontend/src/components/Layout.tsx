@@ -147,7 +147,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-[var(--bg-page)] p-6">
+        <main className="flex-1 overflow-y-auto bg-[var(--bg-page)]">
           <Outlet />
         </main>
       </div>

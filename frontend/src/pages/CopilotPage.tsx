@@ -91,7 +91,7 @@ export default function CopilotPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+    <div className="p-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
       <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 shadow-panel lg:col-span-2">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-100">CISO Co-Pilot</h2>

@@ -80,7 +80,7 @@ export default function SimulatorPage() {
   }, [mutation.data]);
 
   return (
-    <div className="space-y-5">
+    <div className="p-6 space-y-5">
       <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-5 shadow-panel">
         <h2 className="text-xl font-semibold text-slate-100">Attack Simulator</h2>
         <p className="mt-1 text-sm text-slate-400">Demo page for March 28 live walkthrough.</p>
