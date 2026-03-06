@@ -22,7 +22,7 @@
 </p>
 
 <p>
-  <img src="https://img.shields.io/badge/India%20Innovates-2026%20Finalist-FF9933?style=for-the-badge&labelColor=138808"/>
+  <img src="https://img.shields.io/badge/India%20Innovates-2026%20-FF9933?style=for-the-badge&labelColor=138808"/>
   <img src="https://img.shields.io/badge/Domain-Cyber%20Security-cc0000?style=for-the-badge&labelColor=000080"/>
   <img src="https://img.shields.io/badge/Venue-Bharat%20Mandapam-FF9933?style=for-the-badge&labelColor=138808"/>
 </p>
