@@ -1,304 +1,451 @@
-import React from 'react';
-import { GovernmentCard } from '../components/GovernmentCard';
-import { TrendingUp, AlertTriangle, Clock } from 'lucide-react';
+import {
+  AlertTriangle,
+  Bell,
+  CheckCircle2,
+  Clock3,
+  DatabaseZap,
+  OctagonAlert,
+  Settings,
+  Siren,
+} from "lucide-react";
+
+const statCards = [
+  {
+    title: "Total Signals",
+    value: "142,892",
+    trend: "↑ 12%",
+    note: "vs last 24h",
+    accent: "border-l-sky-600",
+    icon: DatabaseZap,
+    iconWrap: "bg-blue-50 text-sky-700",
+    trendClass: "text-green-600",
+  },
+  {
+    title: "Critical Active",
+    value: "02",
+    trend: "Immediate Action Required",
+    accent: "border-l-[var(--critical)]",
+    icon: Siren,
+    iconWrap: "bg-red-50 text-[var(--critical)]",
+    trendClass: "text-[var(--critical)]",
+    urgent: true,
+  },
+  {
+    title: "Contained Today",
+    value: "854",
+    trend: "98.2%",
+    note: "containment rate",
+    accent: "border-l-emerald-700",
+    icon: CheckCircle2,
+    iconWrap: "bg-green-50 text-emerald-700",
+    trendClass: "text-green-600",
+    progress: true,
+  },
+  {
+    title: "Pending Review",
+    value: "24",
+    trend: "↑ 4",
+    note: "new since 08:00",
+    accent: "border-l-[var(--high)]",
+    icon: Clock3,
+    iconWrap: "bg-orange-50 text-[var(--high)]",
+    trendClass: "text-[var(--high)]",
+  },
+];
+
+const bars = [
+  { label: "00:00", critical: 8, high: 24, medium: 44, faded: false, muted: false },
+  { label: "04:00", critical: 0, high: 18, medium: 35, faded: true, muted: true },
+  { label: "06:00", critical: 12, high: 32, medium: 60, faded: false, muted: false },
+  { label: "08:00", critical: 0, high: 0, medium: 20, faded: true, muted: true },
+  { label: "10:00", critical: 40, high: 55, medium: 28, faded: false, muted: false },
+  { label: "12:00", critical: 0, high: 64, medium: 44, faded: false, muted: false },
+  { label: "16:00", critical: 16, high: 33, medium: 66, faded: false, muted: false },
+];
+
+const chartMaxValue = 150;
+const chartHeight = 220;
+
+const portalRows = [
+  {
+    service: "Aadhaar Services",
+    status: "NORMAL",
+    statusClass: "bg-green-50 text-green-700 border-green-100",
+    dotClass: "bg-green-500",
+    traffic: "1.2M req/s",
+    latency: "42ms",
+    latencyClass: "text-green-600",
+    activity: ["h-[60%]", "h-[40%]", "h-[80%]", "h-[50%]"],
+    activityColor: "bg-green-300",
+    rowClass: "",
+  },
+  {
+    service: "UPI Gateway",
+    status: "RISK",
+    statusClass: "bg-orange-100 text-[var(--high)] border-orange-200",
+    dotClass: "bg-[var(--high)]",
+    traffic: "8.4M req/s",
+    latency: "128ms",
+    latencyClass: "text-[var(--high)]",
+    activity: ["h-[100%]", "h-[90%]", "h-[95%]", "h-[100%]"],
+    activityColor: "bg-orange-400",
+    rowClass: "bg-orange-50/30",
+  },
+  {
+    service: "DigiLocker",
+    status: "ATTACK",
+    statusClass: "bg-red-100 text-[var(--critical)] border-red-200",
+    dotClass: "bg-[var(--critical)]",
+    traffic: "320k req/s",
+    latency: "540ms",
+    latencyClass: "text-[var(--critical)]",
+    activity: ["h-[100%]", "h-[100%]", "h-[100%]", "h-[100%]"],
+    activityColor: "bg-red-500",
+    rowClass: "bg-red-50/40",
+  },
+];
+
+const feedItems = [
+  {
+    title: "Unauthorized Access Attempt",
+    severity: "CRITICAL",
+    description:
+      "Multiple failed login attempts detected on Aadhaar Auth API (IP: 103.4.XX.XX)",
+    time: "2m ago",
+    id: "#INC-2849",
+    action: "TRIAGE",
+    cardClass: "bg-red-50 border-[var(--critical)]",
+    severityClass: "bg-white text-[var(--critical)] border-red-200",
+    liveDot: "bg-[var(--critical)]",
+  },
+  {
+    title: "DDoS Signature Detected",
+    severity: "HIGH",
+    description: "Anomalous UDP flood pattern targeting UPI regional nodes.",
+    time: "14m ago",
+    id: "#INC-2848",
+    action: "VIEW",
+    cardClass: "bg-orange-50 border-[var(--high)]",
+    severityClass: "bg-white text-[var(--high)] border-orange-200",
+    liveDot: "bg-[var(--high)]",
+  },
+  {
+    title: "Credential Stuffing",
+    severity: "MEDIUM",
+    description: "Unusual login frequency observed for DigiLocker web portal.",
+    time: "45m ago",
+    id: "#INC-2845",
+    action: "DETAILS",
+    cardClass: "bg-white border-[var(--medium)]",
+    severityClass: "bg-slate-100 text-slate-600 border-slate-200",
+    liveDot: "bg-[var(--medium)]",
+  },
+];
+
+const domains = [
+  { label: "Identity", value: "55%", detail: "Auth & Session", color: "bg-[var(--gov-navy)]" },
+  { label: "Network", value: "30%", detail: "Traffic & Protocol", color: "bg-[var(--high)]" },
+  { label: "Infrastructure", value: "15%", detail: "Host & Cloud", color: "bg-emerald-700" },
+];
 
 export default function Dashboard() {
   return (
-    <div className="p-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
-          <div>
-            <p className="text-slate-500 text-sm font-medium mb-1">Total Incidents</p>
-            <h3 className="text-2xl font-bold text-slate-800">1,248</h3>
-          </div>
-          <div className="flex items-center mt-3 text-sm">
-            <span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-xs font-semibold">
-              +2.4%
-            </span>
-            <span className="text-slate-400 ml-2 text-xs">vs last week</span>
-          </div>
-        </div>
+    <div className="min-h-full space-y-6 p-8">
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((card) => {
+          const Icon = card.icon;
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute right-0 top-0 h-full w-1 bg-[var(--gov-saffron)]"></div>
-          <div>
-            <p className="text-slate-500 text-sm font-medium mb-1">Critical Active</p>
-            <h3 className="text-2xl font-bold text-slate-800">42</h3>
-          </div>
-          <div className="flex items-center mt-3 text-sm">
-            <span className="text-[var(--gov-saffron)] font-medium flex items-center gap-1">
-              <AlertTriangle className="h-4 w-4" />
-              Needs Attention
-            </span>
-          </div>
-        </div>
+          return (
+            <div
+              key={card.title}
+              className={`rounded-[12px] border border-slate-200 border-l-4 ${card.accent} bg-white p-5 shadow-sm`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    {card.title}
+                  </p>
+                  <h3
+                    className={`text-2xl font-bold tracking-tight text-slate-800 ${
+                      card.urgent ? "animate-pulse text-[var(--critical)]" : ""
+                    }`}
+                  >
+                    {card.value}
+                  </h3>
+                </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
-          <div>
-            <p className="text-slate-500 text-sm font-medium mb-1">Contained Today</p>
-            <h3 className="text-2xl font-bold text-slate-800">89%</h3>
-          </div>
-          <div className="flex items-center mt-3 text-sm">
-            <span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-xs font-semibold">
-              +1.2%
-            </span>
-            <span className="text-slate-400 ml-2 text-xs">Efficiency rate</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
-          <div>
-            <p className="text-slate-500 text-sm font-medium mb-1">Avg. Response Time</p>
-            <h3 className="text-2xl font-bold text-slate-800">14m 32s</h3>
-          </div>
-          <div className="flex items-center mt-3 text-sm">
-            <span className="text-emerald-600 font-medium flex items-center gap-1">
-              <TrendingUp className="h-4 w-4 rotate-180" />
-              -2m improvement
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Charts & Tables */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Incidents Chart */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">Incidents - Last 24 Hours</h3>
-                <p className="text-sm text-slate-500">Hourly volume of detected security events</p>
+                {card.progress ? (
+                  <div className="relative h-12 w-12">
+                    <svg className="h-full w-full -rotate-90">
+                      <circle
+                        className="text-slate-100"
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        fill="transparent"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      />
+                      <circle
+                        className="text-emerald-700"
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        fill="transparent"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeDasharray="125"
+                        strokeDashoffset="30"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center text-emerald-700">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`rounded-full p-3 ${card.iconWrap}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                )}
               </div>
-              <div className="flex gap-2">
-                <span className="bg-[var(--gov-navy)] text-white text-xs px-2.5 py-1.5 rounded cursor-pointer font-medium">
-                  All
-                </span>
-                <span className="text-slate-500 text-xs px-2.5 py-1.5 hover:bg-slate-100 rounded cursor-pointer font-medium border border-slate-200">
-                  Critical
-                </span>
+
+              <div className="mt-4 flex items-center gap-2 text-xs">
+                {card.urgent ? <AlertTriangle className="h-3.5 w-3.5 text-[var(--critical)]" /> : null}
+                <span className={`font-bold ${card.trendClass}`}>{card.trend}</span>
+                {card.note ? <span className="text-slate-400">{card.note}</span> : null}
               </div>
             </div>
-            <div className="relative h-72 flex">
-              <div className="flex flex-col justify-between text-[10px] text-slate-400 pr-3 pb-6 border-r border-slate-100">
+          );
+        })}
+      </section>
+
+      <section className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 space-y-6 xl:col-span-8">
+          <div className="rounded-[12px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">Incidents — Last 24 Hours</h3>
+                <p className="text-xs text-slate-500">
+                  Hourly aggregation categorized by severity level
+                </p>
+              </div>
+              <div className="flex rounded-lg bg-slate-100 p-1">
+                <button className="rounded-md bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm">
+                  All
+                </button>
+                <button className="px-4 py-2 text-xs font-medium text-slate-500">Critical</button>
+                <button className="px-4 py-2 text-xs font-medium text-slate-500">High</button>
+              </div>
+            </div>
+
+            <div className="relative h-72 w-full overflow-x-auto px-4 scrollbar-thin">
+              <div className="pointer-events-none absolute left-0 top-0 flex h-[calc(100%-2.5rem)] -translate-x-full flex-col justify-between pr-4 text-[10px] font-bold text-slate-400">
                 <span>150</span>
                 <span>100</span>
                 <span>50</span>
                 <span>0</span>
               </div>
-              <div className="flex-1 flex flex-col">
-                <div className="flex-1 flex items-end justify-between px-4 pb-0 pt-2 gap-2 relative">
-                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none px-4">
-                    <div className="w-full border-t border-slate-50 mt-[0%]"></div>
-                    <div className="w-full border-t border-slate-50 mt-[33.3%]"></div>
-                    <div className="w-full border-t border-slate-50 mt-[33.3%]"></div>
-                    <div className="w-full border-t border-slate-100 mt-auto"></div>
-                  </div>
-                  {[35, 30, 28, 25, 22, 35, 45, 60, 75, 65, 55, 48, 42, 40, 52, 68, 72, 60, 50, 45, 40, 35, 42, 38].map(
-                    (height, i) => (
+
+              <div className="pointer-events-none absolute right-[16%] top-0 bottom-10 w-px bg-red-400/50">
+                <span className="absolute -top-5 -left-4 text-[10px] font-bold text-red-500">NOW</span>
+              </div>
+
+              <div className="flex h-[calc(100%-2.5rem)] items-end justify-between gap-10">
+                {bars.map((bar) => {
+                  const total = bar.critical + bar.high + bar.medium;
+                  const totalHeight = Math.max((total / chartMaxValue) * chartHeight, 36);
+                  const criticalHeight = total ? (bar.critical / total) * totalHeight : 0;
+                  const highHeight = total ? (bar.high / total) * totalHeight : 0;
+                  const mediumHeight = total ? (bar.medium / total) * totalHeight : 0;
+
+                  return (
+                    <div
+                      key={bar.label}
+                      className={`relative flex min-w-[82px] flex-1 items-end justify-center ${
+                        bar.faded ? "opacity-65" : ""
+                      }`}
+                    >
                       <div
-                        key={i}
-                        className={`flex-1 bg-[var(--gov-navy)] rounded-t-[2px] hover:opacity-80 transition-opacity ${
-                          i % 4 === 0 ? '' : 'opacity-20 sm:opacity-100'
-                        }`}
-                        style={{ height: `${height}%` }}
-                        title={`${String(i).padStart(2, '0')}:00 - ${Math.round((height / 100) * 150)} incidents`}
-                      ></div>
-                    )
-                  )}
-                </div>
-                <div className="flex justify-between px-4 mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
-                  <span className="w-0 flex justify-center">00:00</span>
-                  <span className="w-0 flex justify-center">04:00</span>
-                  <span className="w-0 flex justify-center">08:00</span>
-                  <span className="w-0 flex justify-center">12:00</span>
-                  <span className="w-0 flex justify-center">16:00</span>
-                  <span className="w-0 flex justify-center">20:00</span>
-                  <span className="w-0 flex justify-center">23:59</span>
-                </div>
+                        className="absolute bottom-0 flex w-14 flex-col justify-end gap-0.5"
+                        style={{ height: `${totalHeight}px` }}
+                      >
+                        {bar.muted ? (
+                          <>
+                            <div
+                              className="w-full rounded-t-sm bg-[#eda76f]"
+                              style={{ height: `${highHeight}px` }}
+                            />
+                            <div
+                              className="w-full bg-[#74a2cb]"
+                              style={{ height: `${mediumHeight}px` }}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <div
+                              className="w-full rounded-t-sm bg-[var(--critical)]"
+                              style={{ height: `${criticalHeight}px` }}
+                            />
+                            <div
+                              className="w-full bg-[var(--high)]"
+                              style={{ height: `${highHeight}px` }}
+                            />
+                            <div
+                              className="w-full bg-sky-700"
+                              style={{ height: `${mediumHeight}px` }}
+                            />
+                          </>
+                        )}
+                      </div>
+
+                      {(bar.label === "04:00" ||
+                        bar.label === "08:00" ||
+                        bar.label === "12:00" ||
+                        bar.label === "16:00") && (
+                        <span className="absolute -bottom-7 text-[10px] font-bold text-slate-400">
+                          {bar.label}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* Protected Portals Table */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-slate-800">Protected Portals Status</h3>
-              <button className="text-[var(--gov-navy)] text-sm font-medium hover:underline">
-                View All Services
-              </button>
+          <div className="overflow-hidden rounded-[12px] border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 p-5">
+              <h3 className="text-base font-bold text-slate-800">Protected Portals Status</h3>
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                Real-time Telemetry
+              </div>
             </div>
+
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                    <th className="px-6 py-4 font-semibold">Portal Service</th>
-                    <th className="px-6 py-4 font-semibold">Status</th>
-                    <th className="px-6 py-4 font-semibold">Traffic</th>
-                    <th className="px-6 py-4 font-semibold text-right">Latency</th>
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  <tr>
+                    <th className="px-6 py-4">Service</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Traffic</th>
+                    <th className="px-6 py-4">Latency</th>
+                    <th className="px-6 py-4 text-right">Activity</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                      Aadhaar Services
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        ✓ Normal
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">1.2M req/s</td>
-                    <td className="px-6 py-4 text-slate-600 text-right font-mono">45ms</td>
-                  </tr>
-                  <tr className="hover:bg-slate-50 transition-colors bg-[var(--gov-saffron)]/5">
-                    <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-[var(--gov-saffron)]"></div>
-                      UPI Gateway
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--gov-saffron)]/10 text-[var(--gov-saffron)] border border-[var(--gov-saffron)]/20">
-                        ⚠ At Risk
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">8.5M req/s</td>
-                    <td className="px-6 py-4 text-right font-mono text-[var(--gov-saffron)] font-bold">
-                      120ms
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                      DigiLocker
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        ✓ Normal
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">450k req/s</td>
-                    <td className="px-6 py-4 text-slate-600 text-right font-mono">32ms</td>
-                  </tr>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                      IRCTC
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        ✓ Normal
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">2.1M req/s</td>
-                    <td className="px-6 py-4 text-slate-600 text-right font-mono">68ms</td>
-                  </tr>
+                <tbody className="divide-y divide-slate-100">
+                  {portalRows.map((row) => (
+                    <tr key={row.service} className={`hover:bg-slate-50 ${row.rowClass}`}>
+                      <td className="px-6 py-5 font-bold text-slate-700">{row.service}</td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)] ${row.dotClass}`} />
+                          <span className={`rounded border px-3 py-1 text-[10px] font-bold ${row.statusClass}`}>
+                            {row.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 font-medium text-slate-500">{row.traffic}</td>
+                      <td className={`px-6 py-5 font-mono font-bold ${row.latencyClass}`}>{row.latency}</td>
+                      <td className="px-6 py-5 text-right">
+                        <div className="inline-flex h-5 items-end gap-0.5">
+                          {row.activity.map((barClass, index) => (
+                            <div key={`${row.service}-${index}`} className={`w-1 ${row.activityColor} ${barClass}`} />
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
 
-        {/* Right Column - Live Feed & Threat Breakdown */}
-        <div className="flex flex-col gap-6">
-          {/* Live Incident Feed */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col h-full max-h-[500px]">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-lg">
-              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <span className="text-[var(--gov-saffron)] text-xl">📡</span>
+        <div className="col-span-12 space-y-6 xl:col-span-4">
+          <div className="flex h-[500px] flex-col rounded-[12px] border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 p-5">
+              <h3 className="flex items-center gap-2 text-base font-bold text-slate-800">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--high)]" />
                 Live Incident Feed
               </h3>
-              <button className="text-slate-400 hover:text-[var(--gov-navy)]">
-                <span className="text-xl">☰</span>
+              <button className="text-slate-400 transition hover:text-slate-600">
+                <Settings className="h-5 w-5" />
               </button>
             </div>
-            <div className="overflow-y-auto p-0">
-              <div className="p-4 border-b border-slate-100 border-l-4 border-l-[var(--gov-saffron)] hover:bg-slate-50 cursor-pointer transition-colors">
-                <div className="flex justify-between items-start mb-1">
-                  <h4 className="text-sm font-semibold text-slate-800">DDoS Attempt on UPI</h4>
-                  <span className="text-[10px] font-bold text-[var(--gov-saffron)] uppercase tracking-wider">
-                    Critical
-                  </span>
+
+            <div className="flex-1 overflow-y-auto">
+              {feedItems.map((item) => (
+                <div key={item.id} className={`border-b border-slate-100 border-l-4 p-4 ${item.cardClass}`}>
+                  <div className="mb-1 flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${item.liveDot} ${item.severity === "CRITICAL" ? "animate-pulse" : ""}`} />
+                      <h4
+                        className={`text-sm font-bold ${
+                          item.severity === "CRITICAL" ? "text-[var(--critical)]" : "text-slate-800"
+                        }`}
+                      >
+                        {item.title}
+                      </h4>
+                    </div>
+                    <span className={`rounded border px-2 py-1 text-[9px] font-bold ${item.severityClass}`}>
+                      {item.severity}
+                    </span>
+                  </div>
+                  <p className="mb-2 text-[11px] text-slate-600">{item.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {item.time} • {item.id}
+                    </span>
+                    <button className="text-[10px] font-bold text-[var(--gov-navy)] underline">
+                      {item.action}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-500 mb-2">
-                  Unusual traffic spike detected targeting payment gateway.
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> 2m ago
-                  </span>
-                  <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600">
-                    #INC-9921
-                  </span>
-                </div>
-              </div>
-              <div className="p-4 border-b border-slate-100 border-l-4 border-l-[var(--gov-navy)] hover:bg-slate-50 cursor-pointer transition-colors">
-                <div className="flex justify-between items-start mb-1">
-                  <h4 className="text-sm font-semibold text-slate-800">Malware Signature</h4>
-                  <span className="text-[10px] font-bold text-[var(--gov-navy)] uppercase tracking-wider">
-                    Medium
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mb-2">
-                  Heuristic analysis flagged a suspicious executable on WS-402.
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> 15m ago
-                  </span>
-                  <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600">
-                    #INC-9920
-                  </span>
-                </div>
-              </div>
+              ))}
             </div>
-            <div className="p-3 bg-slate-50 border-t border-slate-100 text-center rounded-b-lg">
-              <button className="text-xs text-[var(--gov-navy)] font-bold uppercase tracking-wide">
-                View Full Log
+
+            <div className="border-t border-slate-200 bg-slate-50 p-4 text-center">
+              <button className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gov-navy)]">
+                Expand Full Feed
               </button>
             </div>
           </div>
 
-          {/* Threat Domain Breakdown */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 flex flex-col">
-            <h3 className="text-base font-bold text-slate-800 mb-4">Threat Domain Breakdown</h3>
-            <div className="flex items-center gap-4">
-              <div
-                className="relative w-32 h-32 flex-shrink-0 rounded-full"
-                style={{
-                  background:
-                    'conic-gradient(#1a237e 0% 45%, #FF9933 45% 65%, #64748b 65% 85%, #94a3b8 85% 100%)',
-                }}
-              >
-                <div className="absolute inset-0 m-auto w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-inner">
-                  <div className="text-center">
-                    <span className="block text-xs text-slate-400">Total</span>
-                    <span className="block text-lg font-bold text-slate-800">856</span>
-                  </div>
+          <div className="rounded-[12px] border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-6 text-base font-bold text-slate-800">Threat Domain Breakdown</h3>
+            <div className="flex items-center gap-8">
+              <div className="relative h-32 w-32 flex-shrink-0">
+                <svg className="h-full w-full -rotate-90">
+                  <circle cx="64" cy="64" r="50" fill="transparent" stroke="var(--gov-navy)" strokeWidth="14" strokeDasharray="314" strokeDashoffset="141" />
+                  <circle cx="64" cy="64" r="50" fill="transparent" stroke="var(--high)" strokeWidth="14" strokeDasharray="314" strokeDashoffset="235" />
+                  <circle cx="64" cy="64" r="50" fill="transparent" stroke="#2e7d32" strokeWidth="14" strokeDasharray="314" strokeDashoffset="282" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-slate-800">100%</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Scoped
+                  </span>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 w-full">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[var(--gov-navy)]"></span>
-                    <span className="text-slate-600">Malware</span>
+
+              <div className="flex-1 space-y-4">
+                {domains.map((domain) => (
+                  <div key={domain.label}>
+                    <div className="mb-1 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2.5 w-2.5 rounded-sm ${domain.color}`} />
+                        <span className="text-xs font-bold text-slate-700">{domain.label}</span>
+                      </div>
+                      <span className="text-xs font-bold">{domain.value}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">{domain.detail}</span>
                   </div>
-                  <span className="font-bold text-slate-800">45%</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[var(--gov-saffron)]"></span>
-                    <span className="text-slate-600">DDoS</span>
-                  </div>
-                  <span className="font-bold text-slate-800">20%</span>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

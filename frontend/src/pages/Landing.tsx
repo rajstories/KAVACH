@@ -211,7 +211,6 @@ export default function Landing() {
   const [showSignIn, setShowSignIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [empId, setEmpId] = useState("");
   const [loading, setLoading] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
@@ -529,7 +528,6 @@ export default function Landing() {
               </div>
               {[
                 { label: "OFFICIAL EMAIL", type: "email", placeholder: "officer@meity.gov.in", val: email, set: setEmail },
-                { label: "GOVERNMENT EMPLOYEE ID", type: "text", placeholder: "GOI-MEITY-XXXXX", val: empId, set: setEmpId },
                 { label: "PASSWORD", type: "password", placeholder: "••••••••••••", val: password, set: setPassword },
               ].map(f => (
                 <div key={f.label} style={{ marginBottom: 16 }}>
