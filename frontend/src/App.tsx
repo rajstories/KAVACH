@@ -17,9 +17,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/incidents" element={<IncidentsPage />} />
       <Route element={<Layout />}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/incidents" element={<IncidentsPage />} />
         <Route path="/incidents/:id" element={<IncidentDetail />} />
         <Route path="/threat-intelligence" element={<ThreatIntelligence />} />
         <Route path="/reports" element={<Reports />} />

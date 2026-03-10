@@ -26,7 +26,7 @@ export default function IncidentDetail() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="p-6 space-y-5">
       <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-5 shadow-panel">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
