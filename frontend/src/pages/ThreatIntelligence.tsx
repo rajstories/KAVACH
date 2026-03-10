@@ -1,294 +1,409 @@
-import React from 'react';
+import {
+  Brain,
+  CalendarDays,
+  Check,
+  Download,
+  Grid3x3,
+  Play,
+  ShieldAlert,
+  TrendingUp,
+  TriangleAlert,
+  Zap,
+  Clock3,
+} from "lucide-react";
+
+const actorChips = ["203.0.113.50", "198.51.100.2", "192.0.2.14", "+20 more"];
+
+const topActors = [
+  { rank: "#1", ip: "103.24.11.05", attacks: "1,240", score: "98 / 100", highlight: true },
+  { rank: "#2", ip: "45.89.22.10", attacks: "985", score: "92 / 100" },
+  { rank: "#3", ip: "172.16.55.90", attacks: "754", score: "85 / 100", warm: true },
+  { rank: "#4", ip: "192.168.1.15", attacks: "620", score: "78 / 100", warm: true },
+  { rank: "#5", ip: "88.22.10.45", attacks: "410", score: "72 / 100", warm: true },
+];
+
+const calendarItems = [
+  {
+    title: "New Financial Year",
+    subtitle: "April 1st • Tax portal traffic spike",
+    badge: "HIGH RISK",
+    badgeClass: "bg-orange-100 text-orange-800 border-orange-200",
+  },
+  {
+    title: "State Assembly Election",
+    subtitle: "May 12th • Misinformation campaigns",
+    badge: "CRITICAL",
+    badgeClass: "bg-red-100 text-red-800 border-red-200",
+  },
+];
+
+const aiActions = [
+  {
+    title: "Block Subnet Range",
+    subtitle: "Consistent malicious traffic from 203.0.113.0/24",
+    accent: "border-l-[var(--critical)]",
+  },
+  {
+    title: "Enable WAF Rule #402",
+    subtitle: "Mitigate SQLi pattern detected on Gateway",
+    accent: "border-l-[var(--high)]",
+  },
+  {
+    title: "Patch Server Cluster B",
+    subtitle: "New CVE-2024-9902 vulnerability found",
+    accent: "border-l-sky-700",
+  },
+];
+
+const heatmapRows = [
+  { label: "Mon", values: [1, 1, 0, 0, 0, 1, 2, 2, 4, 4, 3, 2, 1, 0, 0, 1, 2, 4, 4, 3, 2, 1, 0, 0] },
+  { label: "Wed", values: [0, 1, 1, 2, 3, 4, 4, 2, 1, 0, 0, 1, 2, 3, 4, 2, 1, 0, 1, 2, 3, 4, 2, 1] },
+  { label: "Fri", values: [1, 2, 4, 4, 3, 1, 1, 0, 0, 1, 1, 2, 3, 4, 4, 2, 1, 0, 0, 1, 1, 3, 4, 2] },
+  { label: "Sun", values: [4, 3, 2, 1, 0, 1, 1, 2, 4, 4, 3, 2, 1, 0, 0, 1, 1, 2, 4, 3, 2, 1, 0, 0] },
+];
+
+const heatmapColor = (value: number) => {
+  if (value >= 4) return "bg-[var(--gov-navy)]";
+  if (value === 3) return "bg-blue-600";
+  if (value === 2) return "bg-blue-400";
+  if (value === 1) return "bg-blue-200";
+  return "bg-slate-100";
+};
 
 export default function ThreatIntelligence() {
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-4 z-20">
-        <div className="flex justify-between items-start mb-6">
+    <div className="min-h-full space-y-6 p-8">
+      <section className="space-y-6 rounded-[24px] border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <nav className="flex text-xs text-slate-400 font-medium mb-1">
-              <a className="hover:text-[#1a237e]" href="#">Home</a>
+            <nav className="mb-2 flex items-center text-xs font-medium text-slate-400">
+              <span className="hover:text-[var(--gov-navy)]">Home</span>
               <span className="mx-2">/</span>
               <span className="text-slate-600">Threat Intelligence</span>
             </nav>
-            <h2 className="text-2xl font-bold text-[#1a237e]">Threat Intelligence</h2>
-            <p className="text-sm text-slate-500">Predictive analysis and active threat monitoring for national infrastructure</p>
+            <h1 className="text-2xl font-bold text-[var(--gov-navy)]">
+              Threat Intelligence
+            </h1>
+            <p className="mt-0.5 max-w-3xl text-sm text-slate-500">
+              Predictive analysis and active threat monitoring for national infrastructure.
+            </p>
           </div>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-[#1a237e] text-[#1a237e] rounded-md text-sm font-bold hover:bg-slate-50">
-              <span className="material-symbols-outlined text-lg">download</span>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--gov-navy)] bg-white px-5 py-3 text-sm font-bold text-[var(--gov-navy)] shadow-sm transition hover:bg-slate-50">
+              <Download className="h-4 w-4" />
               Export Intel
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#1a237e] text-white rounded-md text-sm font-bold shadow-md hover:bg-[#0d1754]">
-              <span className="material-symbols-outlined text-lg">play_arrow</span>
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--gov-navy)] px-5 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[var(--gov-navy-dark)]">
+              <Play className="h-4 w-4" />
               Run Analysis
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-6">
-          {/* Active Threat Actors */}
-          <div className="bg-white border border-slate-200 border-l-4 border-l-[#b71c1c] p-5 rounded-md shadow-sm flex flex-col justify-between">
+
+        <div className="grid gap-6 xl:grid-cols-3">
+          <div className="flex flex-col justify-between rounded-[20px] border border-slate-200 border-l-4 border-l-[var(--critical)] bg-white p-6 shadow-sm">
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Threat Actors</p>
-                <span className="material-symbols-outlined text-[#b71c1c] text-lg">warning</span>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                  Active Threat Actors
+                </p>
+                <TriangleAlert className="h-5 w-5 text-[var(--critical)]" />
               </div>
-              <p className="text-3xl font-bold text-slate-900">23</p>
-              <p className="text-xs text-slate-500 mt-1">High confidence signatures detected</p>
+              <p className="text-3xl font-bold tracking-tight text-slate-950">23</p>
+              <p className="mt-2 text-sm text-slate-500">
+                High confidence signatures detected
+              </p>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="mono text-[10px] bg-red-50 text-red-800 border border-red-100 px-1.5 py-0.5 rounded">203.0.113.50</span>
-              <span className="mono text-[10px] bg-red-50 text-red-800 border border-red-100 px-1.5 py-0.5 rounded">198.51.100.2</span>
-              <span className="mono text-[10px] bg-red-50 text-red-800 border border-red-100 px-1.5 py-0.5 rounded">192.0.2.14</span>
-              <span className="mono text-[10px] bg-slate-50 text-slate-500 border border-slate-100 px-1.5 py-0.5 rounded">+20 more</span>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {actorChips.map((chip, index) => (
+                <span
+                  key={chip}
+                  className={`rounded-md border px-2 py-1 font-mono text-[11px] ${
+                    index < 3
+                      ? "border-red-100 bg-red-50 text-red-800"
+                      : "border-slate-100 bg-slate-50 text-slate-500"
+                  }`}
+                >
+                  {chip}
+                </span>
+              ))}
             </div>
           </div>
 
-          {/* Top Attack Vector */}
-          <div className="bg-white border border-slate-200 border-l-4 border-l-[#f57c00] p-5 rounded-md shadow-sm flex flex-col justify-between">
+          <div className="flex flex-col justify-between rounded-[20px] border border-slate-200 border-l-4 border-l-[var(--high)] bg-white p-6 shadow-sm">
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Top Attack Vector</p>
-                <span className="material-symbols-outlined text-[#f57c00] text-lg">bolt</span>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                  Top Attack Vector
+                </p>
+                <Zap className="h-5 w-5 text-[var(--high)]" />
               </div>
-              <p className="text-2xl font-bold text-slate-900">Brute Force</p>
-              <p className="text-sm font-semibold text-[#f57c00] mt-0.5">47% of incidents</p>
+              <p className="text-2xl font-bold text-slate-950">Brute Force</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--high)]">47% of incidents</p>
             </div>
-            <div className="mt-4">
-              <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-1">
-                <span className="w-12">SSH</span>
-                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#f57c00] w-[75%]"></div>
+
+            <div className="mt-6 space-y-3 text-xs text-slate-500">
+              <div className="flex items-center gap-3">
+                <span className="w-10">SSH</span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full w-[75%] bg-[var(--high)]" />
                 </div>
                 <span>75%</span>
               </div>
-              <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                <span className="w-12">RDP</span>
-                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-slate-400 w-[25%]"></div>
+              <div className="flex items-center gap-3">
+                <span className="w-10">RDP</span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full w-[25%] bg-slate-400" />
                 </div>
                 <span>25%</span>
               </div>
             </div>
           </div>
 
-          {/* Threat Forecast */}
-          <div className="bg-[#0d1754] border border-[#1a237e] border-l-4 border-l-white p-5 rounded-md shadow-sm flex flex-col justify-between relative overflow-hidden">
-            <div className="absolute right-0 top-0 p-4 opacity-10 pointer-events-none">
-              <span className="material-symbols-outlined text-white text-9xl">query_stats</span>
+          <div className="relative overflow-hidden rounded-[20px] border border-[var(--gov-navy)] border-l-4 border-l-white bg-[var(--gov-navy-dark)] p-6 shadow-sm">
+            <div className="pointer-events-none absolute right-4 top-4 text-[150px] font-bold leading-none text-white/10">
+              %
             </div>
             <div className="relative z-10">
-              <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Threat Forecast</p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <h3 className="text-xl font-bold text-white">Election Season Risk: <span className="text-red-400">HIGH</span></h3>
-              </div>
-            </div>
-            <div className="relative z-10 mt-3 bg-white/10 backdrop-blur-sm p-3 rounded border border-white/10">
-              <p className="text-xs text-white/90 leading-relaxed">
-                Predicted <span className="font-bold text-yellow-400">2.4x volume increase</span> in DDoS attempts against electoral infrastructure over the next 14 days.
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/65">
+                Threat Forecast
               </p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50">
-        <div className="flex gap-6">
-          <div className="w-[60%] space-y-6">
-            {/* Attack Frequency Heatmap */}
-            <div className="bg-white p-5 border border-slate-200 rounded-lg shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-[#1a237e] flex items-center gap-2">
-                  <span className="material-symbols-outlined text-xl">grid_on</span>
-                  Attack Frequency Heatmap
-                </h3>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-slate-400">Less</span>
-                  <span className="w-3 h-3 bg-slate-100 rounded-sm"></span>
-                  <span className="w-3 h-3 bg-blue-200 rounded-sm"></span>
-                  <span className="w-3 h-3 bg-blue-400 rounded-sm"></span>
-                  <span className="w-3 h-3 bg-[#1a237e] rounded-sm"></span>
-                  <span className="text-slate-400">More</span>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div className="flex flex-col justify-between text-[10px] text-slate-400 pr-2 py-1 h-32">
-                  <span>Mon</span>
-                  <span>Wed</span>
-                  <span>Fri</span>
-                  <span>Sun</span>
-                </div>
-                <div className="flex-1">
-                  <div className="grid grid-cols-[repeat(24,minmax(0,1fr))] gap-1 h-32">
-                    {[...Array(96)].map((_, i) => {
-                      const colors = ['bg-blue-100', 'bg-slate-100', 'bg-blue-200', 'bg-blue-300', 'bg-blue-400', 'bg-[#1a237e]', 'bg-blue-500'];
-                      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                      return <div key={i} className={`${randomColor} rounded-sm hover:scale-125 hover:border hover:border-white hover:z-10 transition-all cursor-pointer`}></div>;
-                    })}
-                  </div>
-                  <div className="flex justify-between text-[10px] text-slate-400 mt-2 px-1">
-                    <span>00:00</span>
-                    <span>06:00</span>
-                    <span>12:00</span>
-                    <span>18:00</span>
-                    <span>23:59</span>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 bg-[#0d1754] text-white p-3 rounded-md flex items-center justify-between shadow-md">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-yellow-400">schedule</span>
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-white/70">Peak Attack Window</p>
-                    <p className="text-sm font-semibold">Wednesday &amp; Friday, 14:00 - 18:00 IST</p>
-                  </div>
-                </div>
-                <button className="text-xs border border-white/30 px-3 py-1 rounded hover:bg-white/10">Schedule Maintenance</button>
-              </div>
-            </div>
-
-            {/* Attack Classification Trend */}
-            <div className="bg-white p-5 border border-slate-200 rounded-lg shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-[#1a237e] flex items-center gap-2">
-                  <span className="material-symbols-outlined text-xl">ssid_chart</span>
-                  Attack Classification Trend (7 Days)
-                </h3>
-              </div>
-              <div className="relative h-48 w-full">
-                <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 400 150">
-                  <line stroke="#e2e8f0" strokeWidth="1" x1="0" x2="400" y1="120" y2="120"></line>
-                  <line stroke="#e2e8f0" strokeWidth="1" x1="0" x2="400" y1="80" y2="80"></line>
-                  <line stroke="#e2e8f0" strokeWidth="1" x1="0" x2="400" y1="40" y2="40"></line>
-                  <path d="M0,100 C50,90 100,50 150,60 S250,80 300,40 S350,20 400,30" fill="none" stroke="#f57c00" strokeWidth="2"></path>
-                  <path d="M0,120 C50,110 100,100 150,90 S250,50 300,60 S350,70 400,50" fill="none" stroke="#b71c1c" strokeWidth="2"></path>
-                  <path d="M0,130 C50,130 100,120 150,125 S250,110 300,115 S350,100 400,105" fill="none" stroke="#0277bd" strokeWidth="2"></path>
-                </svg>
-              </div>
-              <div className="flex justify-center gap-6 mt-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-[#f57c00]"></span>
-                  <span className="text-xs text-slate-600 font-medium">Brute Force</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-[#b71c1c]"></span>
-                  <span className="text-xs text-slate-600 font-medium">DDoS</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-[#0277bd]"></span>
-                  <span className="text-xs text-slate-600 font-medium">Malware</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="w-[40%] space-y-6">
-            {/* Top Threat Actors */}
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-              <div className="bg-[#1a237e] px-4 py-3 flex justify-between items-center">
-                <h3 className="font-bold text-white text-sm uppercase tracking-wide">Top Threat Actors</h3>
-                <button className="text-white/70 hover:text-white text-xs underline">View All</button>
-              </div>
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs text-slate-500 font-bold border-b border-slate-100">
-                  <tr>
-                    <th className="px-4 py-2">Rank</th>
-                    <th className="px-4 py-2">Source IP</th>
-                    <th className="px-4 py-2">Attacks</th>
-                    <th className="px-4 py-2 text-right">Risk Score</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {[
-                    { rank: 1, ip: '103.24.11.05', attacks: '1,240', score: '98 / 100', bg: 'bg-red-50/50', border: 'border-red-500', color: 'text-red-700' },
-                    { rank: 2, ip: '45.89.22.10', attacks: '985', score: '92 / 100', bg: '', border: 'border-transparent', color: 'text-slate-600' },
-                    { rank: 3, ip: '172.16.55.90', attacks: '754', score: '85 / 100', bg: '', border: 'border-transparent', color: 'text-slate-600' },
-                    { rank: 4, ip: '192.168.1.15', attacks: '620', score: '78 / 100', bg: '', border: 'border-transparent', color: 'text-slate-600' },
-                    { rank: 5, ip: '88.22.10.45', attacks: '410', score: '72 / 100', bg: '', border: 'border-transparent', color: 'text-slate-600' }
-                  ].map((item) => (
-                    <tr key={item.rank} className={`${item.bg} hover:bg-slate-50`}>
-                      <td className={`px-4 py-3 font-bold ${item.color} border-l-4 ${item.border}`}>#{item.rank}</td>
-                      <td className="px-4 py-3 mono font-medium">{item.ip}</td>
-                      <td className="px-4 py-3 font-semibold">{item.attacks}</td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${item.rank <= 2 ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-orange-100 text-orange-700 border border-orange-200'}`}>
-                          {item.score}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Civic Risk Calendar */}
-            <div className="bg-[#fff3e0] border border-l-4 border-l-[#f57c00] border-orange-200 rounded-md p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="material-symbols-outlined text-[#f57c00]">calendar_month</span>
-                <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide">Civic Risk Calendar</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center bg-white/60 p-2 rounded border border-orange-100">
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">New Financial Year</p>
-                    <p className="text-[10px] text-slate-500">April 1st • Tax portal traffic spike</p>
-                  </div>
-                  <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-[10px] font-bold rounded border border-orange-200">HIGH RISK</span>
-                </div>
-                <div className="flex justify-between items-center bg-white/60 p-2 rounded border border-orange-100">
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">State Assembly Election</p>
-                    <p className="text-[10px] text-slate-500">May 12th • Misinformation campaigns</p>
-                  </div>
-                  <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-bold rounded border border-red-200">CRITICAL</span>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Recommended Actions */}
-            <div className="space-y-3">
-              <h3 className="font-bold text-[#1a237e] text-sm uppercase tracking-wide flex items-center gap-2">
-                <span className="material-symbols-outlined text-lg">psychology</span>
-                AI Recommended Actions
+              <h3 className="mt-2 text-xl font-bold text-white">
+                Election Season Risk:
+                <span className="block text-red-400">HIGH</span>
               </h3>
-              <div className="bg-white border-l-4 border-l-[#b71c1c] border border-slate-200 p-4 rounded shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">Block Subnet Range</p>
-                    <p className="text-xs text-slate-500 mt-1">Consistent malicious traffic from 203.0.113.0/24</p>
-                  </div>
-                  <button className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-full">
-                    <span className="material-symbols-outlined text-lg">check</span>
-                  </button>
-                </div>
-              </div>
-              <div className="bg-white border-l-4 border-l-[#f57c00] border border-slate-200 p-4 rounded shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">Enable WAF Rule #402</p>
-                    <p className="text-xs text-slate-500 mt-1">Mitigate SQLi pattern detected on Gateway</p>
-                  </div>
-                  <button className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-full">
-                    <span className="material-symbols-outlined text-lg">check</span>
-                  </button>
-                </div>
-              </div>
-              <div className="bg-white border-l-4 border-l-[#0277bd] border border-slate-200 p-4 rounded shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">Patch Server Cluster B</p>
-                    <p className="text-xs text-slate-500 mt-1">New CVE-2024-9902 vulnerability found</p>
-                  </div>
-                  <button className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-1.5 rounded-full">
-                    <span className="material-symbols-outlined text-lg">check</span>
-                  </button>
-                </div>
+              <div className="mt-5 rounded-xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+                <p className="text-xs leading-6 text-white/90">
+                  Predicted <span className="font-bold text-yellow-300">2.4x volume increase</span> in
+                  DDoS attempts against electoral infrastructure over the next 14 days.
+                </p>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+        <div className="space-y-6">
+          <div className="rounded-[22px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="flex items-center gap-3 text-lg font-bold text-[var(--gov-navy)]">
+                <Grid3x3 className="h-6 w-6" />
+                Attack Frequency Heatmap
+              </h3>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-400">Less</span>
+                <span className="h-4 w-4 rounded bg-slate-100" />
+                <span className="h-4 w-4 rounded bg-blue-200" />
+                <span className="h-4 w-4 rounded bg-blue-400" />
+                <span className="h-4 w-4 rounded bg-[var(--gov-navy)]" />
+                <span className="text-slate-400">More</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="flex h-32 flex-col justify-between py-1 pr-2 text-[10px] text-slate-400">
+                {heatmapRows.map((row) => (
+                  <span key={row.label}>{row.label}</span>
+                ))}
+              </div>
+
+              <div className="flex-1">
+                <div
+                  className="grid h-32 gap-1"
+                  style={{ gridTemplateColumns: "repeat(24, minmax(0, 1fr))" }}
+                >
+                  {heatmapRows.flatMap((row) =>
+                    row.values.map((value, index) => (
+                      <div
+                        key={`${row.label}-${index}`}
+                        className={`rounded-sm transition hover:scale-110 hover:border hover:border-white hover:z-10 ${heatmapColor(
+                          value,
+                        )}`}
+                      />
+                    )),
+                  )}
+                </div>
+
+                <div className="mt-3 flex justify-between px-1 text-[11px] text-slate-400">
+                  <span>00:00</span>
+                  <span>06:00</span>
+                  <span>12:00</span>
+                  <span>18:00</span>
+                  <span>23:59</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-4 rounded-[18px] bg-[var(--gov-navy-dark)] p-4 text-white shadow-md md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-yellow-400 p-2 text-[var(--gov-navy-dark)]">
+                  <Clock3 className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/65">
+                    Peak Attack Window
+                  </p>
+                  <p className="text-sm font-semibold">
+                    Wednesday &amp; Friday, 14:00 - 18:00 IST
+                  </p>
+                </div>
+              </div>
+              <button className="rounded-lg border border-white/30 px-4 py-2 text-sm hover:bg-white/10">
+                Schedule Maintenance
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-[22px] border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-5 flex items-center gap-3 text-lg font-bold text-[var(--gov-navy)]">
+              <TrendingUp className="h-6 w-6" />
+              Attack Classification Trend (7 Days)
+            </h3>
+
+            <div className="relative h-72 w-full">
+              <svg className="h-full w-full" preserveAspectRatio="none" viewBox="0 0 400 200">
+                <line x1="0" y1="150" x2="400" y2="150" stroke="#dbe4ef" strokeWidth="1" />
+                <line x1="0" y1="100" x2="400" y2="100" stroke="#dbe4ef" strokeWidth="1" />
+                <line x1="0" y1="50" x2="400" y2="50" stroke="#dbe4ef" strokeWidth="1" />
+                <path
+                  d="M0,145 C60,130 95,95 140,90 S245,115 285,65 S350,30 400,40"
+                  fill="none"
+                  stroke="var(--high)"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M0,170 C55,158 120,145 170,130 S255,85 305,105 S355,125 400,88"
+                  fill="none"
+                  stroke="var(--critical)"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M0,182 C55,181 110,170 160,175 S255,158 300,161 S350,145 400,152"
+                  fill="none"
+                  stroke="#0277bd"
+                  strokeWidth="3"
+                />
+              </svg>
+            </div>
+
+            <div className="mt-4 flex flex-wrap justify-center gap-8">
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-[var(--high)]" />
+                <span className="text-sm font-medium text-slate-700">Brute Force</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-[var(--critical)]" />
+                <span className="text-sm font-medium text-slate-700">DDoS</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-sky-700" />
+                <span className="text-sm font-medium text-slate-700">Malware</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between bg-[var(--gov-navy)] px-5 py-4">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-white">
+                Top Threat Actors
+              </h3>
+              <button className="text-xs text-white/70 underline hover:text-white">View All</button>
+            </div>
+
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-bold text-slate-500">
+                <tr>
+                  <th className="px-4 py-2">Rank</th>
+                  <th className="px-4 py-2">Source IP</th>
+                  <th className="px-4 py-2">Attacks</th>
+                  <th className="px-4 py-2 text-right">Risk Score</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {topActors.map((actor) => (
+                  <tr
+                    key={actor.rank}
+                    className={actor.highlight ? "bg-red-50/50" : "hover:bg-slate-50"}
+                  >
+                    <td
+                      className={`border-l-4 px-4 py-3 font-bold ${
+                        actor.highlight
+                          ? "border-red-500 text-red-700"
+                          : "border-transparent text-slate-600"
+                      }`}
+                    >
+                      {actor.rank}
+                    </td>
+                    <td className="px-4 py-3 font-mono font-medium text-slate-900">{actor.ip}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-900">{actor.attacks}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span
+                        className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold border ${
+                          actor.warm
+                            ? "border-orange-200 bg-orange-100 text-orange-700"
+                            : "border-red-200 bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {actor.score}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="rounded-[22px] border border-orange-200 border-l-4 border-l-[var(--high)] bg-[#fff3e0] p-6 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.12em] text-slate-900">
+              <CalendarDays className="h-5 w-5 text-[var(--high)]" />
+              Civic Risk Calendar
+            </h3>
+            <div className="space-y-4">
+              {calendarItems.map((item) => (
+                <div
+                  key={item.title}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-orange-100 bg-white/70 p-4"
+                >
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">{item.title}</p>
+                    <p className="text-sm text-slate-500">{item.subtitle}</p>
+                  </div>
+                  <span className={`rounded-md border px-3 py-1 text-xs font-bold ${item.badgeClass}`}>
+                    {item.badge}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.12em] text-[var(--gov-navy)]">
+              <Brain className="h-5 w-5" />
+              AI Recommended Actions
+            </h3>
+            {aiActions.map((action) => (
+              <div
+                key={action.title}
+                className={`rounded-[18px] border border-slate-200 border-l-4 ${action.accent} bg-white p-5 shadow-sm transition hover:shadow-md`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">{action.title}</p>
+                    <p className="mt-2 text-sm text-slate-500">{action.subtitle}</p>
+                  </div>
+                  <button className="rounded-full bg-slate-100 p-2 text-slate-600 transition hover:bg-slate-200">
+                    <Check className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
